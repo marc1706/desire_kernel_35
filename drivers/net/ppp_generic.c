@@ -40,7 +40,6 @@
 #include <linux/if_arp.h>
 #include <linux/ip.h>
 #include <linux/tcp.h>
-#include <linux/smp_lock.h>
 #include <linux/spinlock.h>
 #include <linux/rwsem.h>
 #include <linux/stddef.h>
@@ -182,6 +181,7 @@ struct channel {
  * channel.downl.
  */
 
+static DEFINE_MUTEX(ppp_mutex);
 static atomic_t ppp_unit_count = ATOMIC_INIT(0);
 static atomic_t channel_count = ATOMIC_INIT(0);
 
@@ -364,7 +364,6 @@ static const int npindex_to_ethertype[NUM_NP] = {
  */
 static int ppp_open(struct inode *inode, struct file *file)
 {
-	cycle_kernel_lock();
 	/*
 	 * This could (should?) be enforced by the permissions on /dev/ppp.
 	 */
@@ -589,7 +588,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		 * this fd and reopening /dev/ppp.
 		 */
 		err = -EINVAL;
-		lock_kernel();
+		mutex_lock(&ppp_mutex);
 		if (pf->kind == INTERFACE) {
 			ppp = PF_TO_PPP(pf);
 			if (file == ppp->owner)
@@ -601,7 +600,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		} else
 			printk(KERN_DEBUG "PPPIOCDETACH file->f_count=%ld\n",
 			       atomic_long_read(&file->f_count));
-		unlock_kernel();
+		mutex_unlock(&ppp_mutex);
 		return err;
 	}
 
@@ -609,7 +608,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		struct channel *pch;
 		struct ppp_channel *chan;
 
-		lock_kernel();
+		mutex_lock(&ppp_mutex);
 		pch = PF_TO_CHANNEL(pf);
 
 		switch (cmd) {
@@ -631,7 +630,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				err = chan->ops->ioctl(chan, cmd, arg);
 			up_read(&pch->chan_sem);
 		}
-		unlock_kernel();
+		mutex_unlock(&ppp_mutex);
 		return err;
 	}
 
@@ -641,7 +640,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return -EINVAL;
 	}
 
-	lock_kernel();
+	mutex_lock(&ppp_mutex);
 	ppp = PF_TO_PPP(pf);
 	switch (cmd) {
 	case PPPIOCSMRU:
@@ -789,7 +788,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	default:
 		err = -ENOTTY;
 	}
-	unlock_kernel();
+	mutex_unlock(&ppp_mutex);
 	return err;
 }
 
@@ -802,7 +801,7 @@ static int ppp_unattached_ioctl(struct net *net, struct ppp_file *pf,
 	struct ppp_net *pn;
 	int __user *p = (int __user *)arg;
 
-	lock_kernel();
+	mutex_lock(&ppp_mutex);
 	switch (cmd) {
 	case PPPIOCNEWUNIT:
 		/* Create a new ppp unit */
@@ -853,7 +852,7 @@ static int ppp_unattached_ioctl(struct net *net, struct ppp_file *pf,
 	default:
 		err = -ENOTTY;
 	}
-	unlock_kernel();
+	mutex_unlock(&ppp_mutex);
 	return err;
 }
 
