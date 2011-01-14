@@ -45,6 +45,7 @@
 #include "xfs_trace.h"
 
 #include <linux/dcache.h>
+#include <linux/falloc.h>
 
 static const struct vm_operations_struct xfs_file_vm_ops;
 
@@ -896,6 +897,60 @@ write_retry:
 	return -error;
 }
 
+STATIC long
+xfs_file_fallocate(
+	struct file	*file,
+	int		mode,
+	loff_t		offset,
+	loff_t		len)
+{
+	struct inode	*inode = file->f_path.dentry->d_inode;
+	long		error;
+	loff_t		new_size = 0;
+	xfs_flock64_t	bf;
+	xfs_inode_t	*ip = XFS_I(inode);
+	int		cmd = XFS_IOC_RESVSP;
+
+	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
+		return -EOPNOTSUPP;
+
+	bf.l_whence = 0;
+	bf.l_start = offset;
+	bf.l_len = len;
+
+	xfs_ilock(ip, XFS_IOLOCK_EXCL);
+
+	if (mode & FALLOC_FL_PUNCH_HOLE)
+		cmd = XFS_IOC_UNRESVSP;
+
+	/* check the new inode size is valid before allocating */
+	if (!(mode & FALLOC_FL_KEEP_SIZE) &&
+	    offset + len > i_size_read(inode)) {
+		new_size = offset + len;
+		error = inode_newsize_ok(inode, new_size);
+		if (error)
+			goto out_unlock;
+	}
+
+	error = -xfs_change_file_space(ip, cmd, &bf, 0, XFS_ATTR_NOLOCK);
+	if (error)
+		goto out_unlock;
+
+	/* Change file size if needed */
+	if (new_size) {
+		struct iattr iattr;
+
+		iattr.ia_valid = ATTR_SIZE;
+		iattr.ia_size = new_size;
+		error = -xfs_setattr(ip, &iattr, XFS_ATTR_NOLOCK);
+	}
+
+out_unlock:
+	xfs_iunlock(ip, XFS_IOLOCK_EXCL);
+	return error;
+}
+
+
 STATIC int
 xfs_file_open(
 	struct inode	*inode,
@@ -1017,6 +1072,7 @@ const struct file_operations xfs_file_operations = {
 #ifdef HAVE_FOP_OPEN_EXEC
 	.open_exec	= xfs_file_open_exec,
 #endif
+	.fallocate	= xfs_file_fallocate,
 };
 
 const struct file_operations xfs_dir_file_operations = {
