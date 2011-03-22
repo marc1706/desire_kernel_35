@@ -91,7 +91,8 @@ again:
 		goto fail;
 	}
 
-	workspace->def_strm.workspace = vmalloc(zlib_deflate_workspacesize());
+	workspace->def_strm.workspace = vmalloc(zlib_deflate_workspacesize(
+						MAX_WBITS, MAX_MEM_LEVEL));
 	if (!workspace->def_strm.workspace) {
 		ret = -ENOMEM;
 		goto fail;
