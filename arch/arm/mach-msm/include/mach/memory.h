@@ -17,6 +17,9 @@
 #define __ASM_ARCH_MEMORY_H
 
 /* physical offset of RAM */
+#if defined(CONFIG_PHYS_OFFSET)
+#define PHYS_OFFSET UL(CONFIG_PHYS_OFFSET)
+#define RESET_VECTOR UL(0x00000000)
 #if defined(CONFIG_ARCH_QSD8X50)
 #define PHYS_OFFSET		UL(0x20000000)
 #elif defined(CONFIG_ARCH_MSM7225)

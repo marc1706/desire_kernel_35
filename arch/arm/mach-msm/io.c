@@ -126,6 +126,10 @@ static struct map_desc msm_io_desc[] __initdata = {
 #ifdef CONFIG_MSM_DEBUG_UART
 	MSM_DEVICE(DEBUG_UART),
 #endif
+	MSM_DEVICE(TS),
+	MSM_DEVICE(SSBI),
+	MSM_DEVICE(TSSC),
+	MSM_DEVICE(RAM_CONSOLE),
 #ifdef CONFIG_ARCH_QSD8X50
 	MSM_DEVICE(TCSR),
 #endif

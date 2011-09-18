@@ -345,6 +345,7 @@ static int lcdc_hw_init(struct mdp_lcdc_info *lcdc)
 #endif
 	clk_set_rate(lcdc->pclk, lcdc->parms.clk_rate);
 	clk_set_rate(lcdc->pad_pclk, lcdc->parms.clk_rate);
+#ifndef CONFIG_MACH_HTCLEO
 	/* write the lcdc params */
 	mdp_writel(lcdc->mdp, lcdc->parms.hsync_ctl, MDP_LCDC_HSYNC_CTL);
 	mdp_writel(lcdc->mdp, lcdc->parms.vsync_period, MDP_LCDC_VSYNC_PERIOD);
@@ -390,7 +391,7 @@ static int lcdc_hw_init(struct mdp_lcdc_info *lcdc)
 
 	/* enable the lcdc timing generation */
 	mdp_writel(lcdc->mdp, 1, MDP_LCDC_EN);
-
+#endif
 	return 0;
 }
 
