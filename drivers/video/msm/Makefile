@@ -31,6 +31,7 @@ ifndef CONFIG_ARCH_MSM8X60
 #
 obj-y += mddi_client_dummy.o
 obj-y += mddi_client_toshiba.o
+ifndef CONFIG_MACH_HTCLEO
 obj-y += mddi_client_eid.o mddi_eid_cabc.o
 obj-y += mddi_client_nt35399.o
 obj-y += mddi_client_eid.o
@@ -45,6 +46,7 @@ obj-y += mddi_client_renesas_R61531.o
 obj-y += mddi_client_s6d04d1.o
 obj-y += mddi_client_s6d05a0.o
 obj-y += mddi_client_hx8356.o mddi_himax_cabc.o
+endif
 endif
 
 # MDP LCD controller driver

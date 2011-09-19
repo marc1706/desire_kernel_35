@@ -40,6 +40,8 @@
 
 #include <mach/dma.h>
 
+unsigned crci_mask;
+
 #if defined(CONFIG_ARCH_MSM7X30)
 #define MSM_NAND_BASE 0xA0200000
 #else
@@ -263,7 +265,7 @@ uint32_t flash_read_id(struct msm_nand_chip *chip)
 
 	dsb();
 	msm_dmov_exec_cmd(
-		chip->dma_channel, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 	dsb();
 
@@ -307,7 +309,7 @@ int flash_read_config(struct msm_nand_chip *chip)
 
 	dsb();
 	msm_dmov_exec_cmd(
-		chip->dma_channel, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 	dsb();
 
@@ -347,7 +349,7 @@ unsigned flash_rd_reg(struct msm_nand_chip *chip, unsigned addr)
 
 	dsb();
 	msm_dmov_exec_cmd(
-		chip->dma_channel, DMOV_CMD_PTR_LIST |
+		chip->dma_channel,crci_mask, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 	dsb();
 	rv = dma_buffer->data;
@@ -380,7 +382,7 @@ void flash_wr_reg(struct msm_nand_chip *chip, unsigned addr, unsigned val)
 
 	dsb();
 	msm_dmov_exec_cmd(
-		chip->dma_channel, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 	dsb();
 
@@ -751,7 +753,7 @@ static int msm_nand_read_oob(struct mtd_info *mtd, loff_t from, struct mtd_oob_o
 
 		dsb();
 		msm_dmov_exec_cmd(
-			chip->dma_channel, DMOV_CMD_PTR_LIST | DMOV_CMD_ADDR(
+			chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST | DMOV_CMD_ADDR(
 			msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 		dsb();
 
@@ -1365,7 +1367,7 @@ msm_nand_write_oob(struct mtd_info *mtd, loff_t to, struct mtd_oob_ops *ops)
 		dma_buffer->cmdptr = (msm_virt_to_dma(chip, dma_buffer->cmd) >> 3) | CMD_PTR_LP;
 
 		dsb();
-		msm_dmov_exec_cmd(chip->dma_channel, DMOV_CMD_PTR_LIST | DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
+		msm_dmov_exec_cmd(chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST | DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 		dsb();
 
 		/* if any of the writes failed (0x10), or there was a
@@ -1577,7 +1579,7 @@ msm_nand_erase(struct mtd_info *mtd, struct erase_info *instr)
 
 	dsb();
 	msm_dmov_exec_cmd(
-		chip->dma_channel, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 	dsb();
 
@@ -1728,7 +1730,7 @@ msm_nand_block_isbad(struct mtd_info *mtd, loff_t ofs)
 				dma_buffer->cmd) >> 3) | CMD_PTR_LP;
 
 	dsb();
-	msm_dmov_exec_cmd(chip->dma_channel, DMOV_CMD_PTR_LIST |
+	msm_dmov_exec_cmd(chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 	dsb();
 

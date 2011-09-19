@@ -20,28 +20,6 @@
 #if defined(CONFIG_PHYS_OFFSET)
 #define PHYS_OFFSET UL(CONFIG_PHYS_OFFSET)
 #define RESET_VECTOR UL(0x00000000)
-#if defined(CONFIG_ARCH_QSD8X50)
-#define PHYS_OFFSET		UL(0x20000000)
-#elif defined(CONFIG_ARCH_MSM7225)
-#define PHYS_OFFSET		UL(0x02E00000)
-#elif defined(CONFIG_ARCH_MSM7227)
-#define PHYS_OFFSET		UL(0x12C00000)
-#elif defined(CONFIG_ARCH_MSM7230) && (defined(CONFIG_MACH_VIVO) || defined(CONFIG_MACH_SAGA) || defined(CONFIG_MACH_FLYER) || defined(CONFIG_MACH_ICON) || defined(CONFIG_MACH_EXPRESS_KT) || defined(CONFIG_MACH_TAG))
-#define PHYS_OFFSET		UL(0x04400000)
-#elif defined(CONFIG_ARCH_MSM7230)
-#define PHYS_OFFSET		UL(0x04000000)
-#elif defined(CONFIG_ARCH_MSM7630) && defined(CONFIG_MACH_MECHA)
-#define PHYS_OFFSET		UL(0x05200000)
-#elif defined(CONFIG_ARCH_MSM7630) && defined(CONFIG_MACH_SPEEDY)
-#define PHYS_OFFSET		UL(0x04000000)
-#elif defined(CONFIG_ARCH_MSM7630) && (defined(CONFIG_MACH_VIVOW) || defined(CONFIG_MACH_EXPRESS) || defined(CONFIG_MACH_KINGDOM) || defined(CONFIG_MACH_TAGW))
-#define PHYS_OFFSET		UL(0x05000000)
-#elif defined(CONFIG_ARCH_MSM7630)
-#define PHYS_OFFSET		UL(0x04A00000)
-#elif defined(CONFIG_ARCH_MSM8X60)
-#define PHYS_OFFSET UL(CONFIG_PHYS_OFFSET)
-#else
-#define PHYS_OFFSET		UL(0x10000000)
 #endif
 
 #define MAX_PHYSMEM_BITS 32
@@ -119,4 +97,3 @@ extern void l2x0_cache_flush_all(void);
 #endif
 
 #endif
-

@@ -197,7 +197,7 @@ int qspi_send(unsigned char id, unsigned data)
 	return 0;
 }
 
-static int __init msm_spi_probe(struct platform_device *pdev)
+static int msm_spi_probe(struct platform_device *pdev)
 {
 	int rc ;
 	struct spi_platform_data *pdata = pdev->dev.platform_data;

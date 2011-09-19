@@ -27,7 +27,9 @@ config ARCH_MSM7X30
 config ARCH_QSD8X50
 	bool "QSD8x50"
 	select ARCH_MSM_SCORPION
+	select MSM_SMD
 	select CPU_V7
+	select MSM_REMOTE_SPINLOCK_LDREX
 	select VERIFY_PERMISSION_FAULT
 config ARCH_MSM8X60
 	bool "MSM8X60"

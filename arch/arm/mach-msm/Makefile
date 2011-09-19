@@ -3,11 +3,13 @@ obj-y += io.o dma.o memory.o
 ifdef CONFIG_ARCH_MSM8X60
 obj-y += timer-8x60.o clock-core.o clock-voter.o
 else
-obj-y += timer.o clock.o
+obj-y += timer.o 
 endif
 
 ifndef CONFIG_ARCH_MSM8X60
-obj-y += irq.o devices.o pmic.o vreg.o dex_comm.o
+obj-y += irq.o pmic.o vreg.o dex_comm.o
+# obj-y += devices.o
+obj-$(CONFIG_ARCH_QSD8X50) += devices-qsd8x50.o
 endif
 obj-y += pwrtest.o
 obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
@@ -152,9 +154,9 @@ endif
 
 obj-$(CONFIG_CPU_FREQ) += cpufreq.o
 
-ifndef CONFIG_ARCH_MSM8X60
-obj-$(CONFIG_HTC_ACOUSTIC) += htc_acoustic.o
-endif
+# ifndef CONFIG_ARCH_MSM8X60
+# obj-$(CONFIG_HTC_ACOUSTIC) += htc_acoustic.o
+# endif
 
 obj-$(CONFIG_HTC_ACOUSTIC_QSD) += htc_acoustic_qsd.o
 obj-$(CONFIG_MSM7KV2_AUDIO) += htc_acoustic_7x30.o htc_acdb_7x30.o
@@ -192,7 +194,8 @@ obj-$(CONFIG_MACH_BRAVOC) += board-bravoc-rfkill.o board-bravoc-audio.o
 obj-$(CONFIG_MACH_BRAVOC) += board-bravoc-wifi.o htc_awb_cal.o
 obj-$(CONFIG_MACH_BRAVOC) += board-bravoc-microp.o
 
-obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-audio.o board-htcleo-acoustic.o
+obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-audio.o
+obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-acoustic.o
 obj-$(CONFIG_MACH_HTCLEO) += board-htcleo.o board-htcleo-panel.o board-htcleo-keypad.o
 obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-ts.o board-htcleo-mmc.o ieee754-df.o
 obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-microp.o

@@ -1122,6 +1122,29 @@ void clk_disable(struct clk *clk)
 }
 EXPORT_SYMBOL(clk_disable);
 
+int pc_clk_reset(unsigned id, enum clk_reset_action action)
+{
+         int rc;
+ 
+        if (action == CLK_RESET_ASSERT)
+                 rc = msm_proc_comm(PCOM_CLKCTL_RPC_RESET_ASSERT, &id, NULL);
+        else
+                 rc = msm_proc_comm(PCOM_CLKCTL_RPC_RESET_DEASSERT, &id, NULL);
+ 
+         if (rc < 0)
+                 return rc;
+         else
+                return (int)id < 0 ? -EINVAL : 0;
+}
+
+int clk_reset(struct clk *clk, enum clk_reset_action action)
+{
+	if (!clk->ops->reset)
+		clk->ops->reset = &pc_clk_reset;
+	return clk->ops->reset(clk->remote_id, action);
+}
+EXPORT_SYMBOL(clk_reset);
+
 unsigned long clk_get_rate(struct clk *clk)
 {
 	return pc_clk_get_rate(clk->id);

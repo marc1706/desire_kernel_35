@@ -63,6 +63,18 @@
 #define MSM_CLK_CTL_SH2_PHYS  0xABA01000
 #define MSM_CLK_CTL_SH2_SIZE  SZ_4K
 
+#define MSM_TS_BASE           IOMEM(0xF9006000)
+#define MSM_TS_PHYS           0xAA300000
+#define MSM_TS_SIZE           SZ_4K
+
+#define MSM_SSBI_BASE         IOMEM(0xF9008000)
+#define MSM_SSBI_PHYS         0xA8100000
+#define MSM_SSBI_SIZE         SZ_4K
+
+#define MSM_TSSC_BASE         IOMEM(0xF9009000)
+#define MSM_TSSC_PHYS         0xAA300000
+#define MSM_TSSC_SIZE         SZ_4K
+
 #define MSM_SHARED_RAM_BASE   IOMEM(0xF8100000)
 #define MSM_SHARED_RAM_PHYS   0x00100000
 #define MSM_SHARED_RAM_SIZE   SZ_1M
