@@ -1,8 +1,8 @@
-/* This file is auto generated, version 12 */
+/* This file is auto generated, version 18 */
 /*  PREEMPT */
 #define UTS_MACHINE "arm"
-#define UTS_VERSION "#12 PREEMPT Sun Sep 18 19:25:24 PDT 2011"
-#define LINUX_COMPILE_TIME "19:25:24"
+#define UTS_VERSION "#18 PREEMPT Tue Sep 20 00:09:43 PDT 2011"
+#define LINUX_COMPILE_TIME "00:09:45"
 #define LINUX_COMPILE_BY "root"
 #define LINUX_COMPILE_HOST "VBOX-ACA"
 #define LINUX_COMPILE_DOMAIN "(none)"

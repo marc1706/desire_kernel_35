@@ -48,6 +48,7 @@
 #ifdef CONFIG_HAS_WAKELOCK
 #include <linux/wakelock.h>
 #endif
+#include "board-htcleo.h"
 
 enum {
 	MSM_PM_DEBUG_SUSPEND = 1U << 0,
@@ -924,9 +925,28 @@ void msm_pm_flush_console(void)
 	release_console_sem();
 }
 
+#if defined(CONFIG_MACH_HTCLEO)
+static void htcleo_save_reset_reason()
+{
+	/* save restart_reason to be accesible in bootloader @ ramconsole - 0x1000*/
+	uint32_t *bootloader_reset_reason = ioremap(0x2FFB0000, PAGE_SIZE);
+	if(bootloader_reset_reason!=NULL)
+	{
+		printk(KERN_INFO "msm_restart saving reason %x @ 0x2FFB0000 \n", restart_reason);
+		
+		bootloader_reset_reason[0]=restart_reason;
+		bootloader_reset_reason[1]=restart_reason^0x004b4c63; //XOR with cLK signature so we know is not trash
+	}
+}
+#endif
+
 static void msm_pm_restart(char str, const char *cmd)
 {
 	msm_pm_flush_console();
+
+#if defined(CONFIG_MACH_HTCLEO)
+	htcleo_save_reset_reason();
+#endif
 
 	/*  always reboot device through proc comm */
 	if (restart_reason == RESTART_REASON_RIL_FATAL)
@@ -1130,6 +1150,15 @@ static int __init msm_pm_init(void)
 
 	register_reboot_notifier(&msm_reboot_notifier);
 	msm_pm_reset_vector = ioremap(0x0, PAGE_SIZE);
+
+#if defined(CONFIG_MACH_HTCLEO)
+	// if cLK is bootloader 0x0 is protected and not writtable but cLK changed reset vecotr to jump at address stored at 0x11800004
+	if(htcleo_is_nand_boot()==2){
+		pr_info("msm_pm: 0x00000000: %x\n", msm_pm_reset_vector[0]);
+		pr_info("msm_pm: 0x00000004: %x\n", msm_pm_reset_vector[1]);
+		msm_pm_reset_vector = ioremap(0x11800000, PAGE_SIZE);
+	}
+#endif
 
 	if (msm_pm_reset_vector == NULL) {
 		printk(KERN_ERR "msm_pm_init: failed to map reset vector\n");

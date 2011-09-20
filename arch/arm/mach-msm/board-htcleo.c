@@ -541,7 +541,7 @@ static struct msm_camera_device_platform_data msm_camera_device_data =
 
 static int flashlight_control(int mode)
 {
-	return aat1271_flashlight_control(mode);
+        return aat1271_flashlight_control(mode);
 }
 
 static struct camera_flash_cfg msm_camera_sensor_flash_cfg = {
@@ -577,38 +577,31 @@ static struct platform_device msm_camera_sensor_s5k3e2fx =
 // bluetooth
 ///////////////////////////////////////////////////////////////////////
 
-#define ATAG_BDADDR_SIZE 4
-#define BDADDR_STR_SIZE 18
-
-static char bdaddr[BDADDR_STR_SIZE];
-module_param_string(bdaddr, bdaddr, sizeof(bdaddr), 0400);
-MODULE_PARM_DESC(bdaddr, "bdooth address");
-
+static char bdaddress[20];
 static void bt_export_bd_address(void)
-{
-	snprintf(bdaddr, BDADDR_STR_SIZE, "01:02:03:04:05:06");
+ {
+	unsigned char cTemp[6];
+
+	memcpy(cTemp, get_bt_bd_ram(), 6);
+	sprintf(bdaddress, "%02x:%02x:%02x:%02x:%02x:%02x", cTemp[0], cTemp[1], cTemp[2], cTemp[3], cTemp[4], cTemp[5]);
+	pr_info("BD_ADDRESS=%s\n", bdaddress);
 }
 
+module_param_string(bdaddress, bdaddress, sizeof(bdaddress), S_IWUSR | S_IRUGO);
+MODULE_PARM_DESC(bdaddress, "BT MAC ADDRESS");
 
-static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
-	.rx_wakeup_irq = -1,
+static struct msm_serial_hs_platform_data msm_uart_dm1_pdata =
+{
+	/* Chip to Device */
+	.rx_wakeup_irq = MSM_GPIO_TO_INT(HTCLEO_GPIO_BT_HOST_WAKE),
 	.inject_rx_on_wakeup = 0,
-	.exit_lpm_cb = bcm_bt_lpm_exit_lpm_locked,
-};
+	.cpu_lock_supported = 0,
 
-static struct bcm_bt_lpm_platform_data bcm_bt_lpm_pdata = {
-	.gpio_wake = HTCLEO_GPIO_BT_CHIP_WAKE,
-	.gpio_host_wake = HTCLEO_GPIO_BT_HOST_WAKE,
-	.request_clock_off_locked = msm_hs_request_clock_off_locked,
-	.request_clock_on_locked = msm_hs_request_clock_on_locked,
-};
+	/* for bcm */
+	.bt_wakeup_pin_supported = 1,
+	.bt_wakeup_pin   = HTCLEO_GPIO_BT_CHIP_WAKE,
+	.host_wakeup_pin = HTCLEO_GPIO_BT_HOST_WAKE,
 
-struct platform_device bcm_bt_lpm_device = {
-	.name = "bcm_bt_lpm",
-	.id = 0,
-	.dev = {
-		.platform_data = &bcm_bt_lpm_pdata,
-	},
 };
 
 static struct platform_device htcleo_rfkill =
@@ -753,16 +746,12 @@ static struct platform_device msm_kgsl_device =
 
 static struct android_pmem_platform_data mdp_pmem_pdata = {
 	.name		= "pmem",
-	.start		= MSM_PMEM_MDP_BASE,
-	.size		= MSM_PMEM_MDP_SIZE,
 	.no_allocator	= 0,
 	.cached		= 1,
 };
 
 static struct android_pmem_platform_data android_pmem_adsp_pdata = {
 	.name		= "pmem_adsp",
-	.start		= MSM_PMEM_ADSP_BASE,
-	.size		= MSM_PMEM_ADSP_SIZE,
 	.no_allocator	= 0,
 	.cached		= 1,
 };
@@ -888,17 +877,15 @@ struct platform_device btn_backlight_manager = {
 
 static struct platform_device *devices[] __initdata =
 {
-	&bcm_bt_lpm_device,
 	&ram_console_device,
 #if !defined(CONFIG_MSM_SERIAL_DEBUGGER)
 	&msm_device_uart1,
 #endif
-#ifdef CONFIG_SERIAL_MSM_HS
 	&msm_device_uart_dm1,
-#endif
+	&htcleo_rfkill,
+	&qsd_device_spi,
 	&msm_device_nand,
 	&msm_device_smd,
-	&htcleo_rfkill,
 	&msm_device_rtc,
 	&android_pmem_mdp_device,
 	&android_pmem_adsp_device,
@@ -915,7 +902,6 @@ static struct platform_device *devices[] __initdata =
 	&msm_kgsl_device,
 	&msm_camera_sensor_s5k3e2fx,
 	&htcleo_flashlight_device,
-	&qsd_device_spi,
 	&htc_headset_mgr,
 	&htc_headset_gpio,
 #ifdef CONFIG_HTCLEO_BTN_BACKLIGHT_MANAGER
@@ -1021,8 +1007,6 @@ static void __init htcleo_blink_camera_led(void){
 static void __init htcleo_init(void)
 {
 	printk("htcleo_init()\n");
-	/* Blink the camera LED shortly to show that we're alive! */
-	htcleo_blink_camera_led();
 	msm_hw_reset_hook = htcleo_reset;
 
 	do_grp_reset();
@@ -1047,6 +1031,8 @@ static void __init htcleo_init(void)
 	
 	msm_device_hsusb.dev.platform_data = &msm_hsusb_pdata;
 	msm_device_uart_dm1.dev.platform_data = &msm_uart_dm1_pdata;
+	msm_device_uart_dm1.name = "msm_serial_hs_bcm"; /* for bcm */
+    	msm_device_uart_dm1.resource[3].end = 6;
 
 	platform_add_devices(devices, ARRAY_SIZE(devices));
 
@@ -1085,10 +1071,36 @@ int __init ram_console_early_init(void);
 #endif
 #endif
 
+static unsigned pmem_sf_size = MSM_PMEM_MDP_SIZE;
+static unsigned pmem_adsp_size = MSM_PMEM_ADSP_SIZE;
+
+static void __init htcleo_allocate_memory_regions(void)
+{
+	void *addr;
+	unsigned long size;
+
+	size = pmem_sf_size;
+	if (size) {
+		addr = alloc_bootmem(size);
+		mdp_pmem_pdata.start = __pa(addr);
+		mdp_pmem_pdata.size = size;
+		pr_info("allocating %lu bytes at %p (%lx physical) for sf "
+			"pmem arena\n", size, addr, __pa(addr));
+	}
+
+	size = pmem_adsp_size;
+	if (size) {
+		addr = alloc_bootmem(size);
+		android_pmem_adsp_pdata.start = __pa(addr);
+		android_pmem_adsp_pdata.size = size;
+		pr_info("allocating %lu bytes at %p (%lx physical) for adsp "
+			"pmem arena\n", size, addr, __pa(addr));
+	}
+}
 static void __init htcleo_map_io(void)
 {
 	msm_map_common_io();
-
+	htcleo_allocate_memory_regions();
 	msm_clock_init();
 	
 #if defined(CONFIG_VERY_EARLY_CONSOLE)

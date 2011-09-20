@@ -128,7 +128,7 @@ endif
 endif
 
 obj-$(CONFIG_MSM_DALRPC) += dal.o
-obj-$(CONFIG_MSM_DALRPC_TEST) += dal_remotetest.o
+# obj-$(CONFIG_MSM_DALRPC_TEST) += dal_remotetest.o
 obj-$(CONFIG_ARCH_MSM7X30) += dal_axi.o
 obj-$(CONFIG_MSM_ADSP) += qdsp5/
 obj-$(CONFIG_MSM_ADSP_COMP) += qdsp5_comp/
