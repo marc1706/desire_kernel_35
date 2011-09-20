@@ -1,7 +1,7 @@
 /*
  * Automatically generated C config: don't edit
  * Linux kernel version: 2.6.35.10
- * Tue Sep 20 00:01:36 2011
+ * Tue Sep 20 01:23:32 2011
  */
 #define AUTOCONF_INCLUDED
 #define CONFIG_IP_NF_TARGET_REDIRECT 1
@@ -155,6 +155,7 @@
 #define CONFIG_INPUT_GPIO 1
 #define CONFIG_DIAG_OVER_USB 1
 #define CONFIG_CPU_FREQ_GOV_USERSPACE 1
+#define CONFIG_BCM4329_SOFTAP 1
 #define CONFIG_INET_IPCOMP 1
 #define CONFIG_KERNEL_LZMA 1
 #define CONFIG_DEBUG_SG 1
