@@ -30,7 +30,12 @@ endif
 obj-y += nand_partitions.o
 obj-y += drv_callback.o
 obj-y += radio_feedback.o
-obj-$(CONFIG_ARCH_QSD8X50) += pmic.o htc_wifi_nvs.o htc_bluetooth.o
+obj-$(CONFIG_ARCH_QSD8X50) += pmic.o
+ifndef CONFIG_MACH_HTCLEO
+obj-$(CONFIG_ARCH_QSD8X50) += htc_wifi_nvs.o htc_bluetooth.o
+else
+obj-$(CONFIG_ARCH_QSD8X50) += board-htcleo-wifi-nvs.o
+endif
 
 obj-$(CONFIG_SMP) += headsmp.o platsmp.o
 obj-$(CONFIG_ARCH_MSM8X60) += devices-msm8x60.o clock-local.o clock-8x60.o acpuclock-8x60.o clock-debug.o socinfo.o
@@ -134,7 +139,11 @@ obj-$(CONFIG_MSM_ADSP) += qdsp5/
 obj-$(CONFIG_MSM_ADSP_COMP) += qdsp5_comp/
 obj-$(CONFIG_MSM7KV2_AUDIO) += qdsp5v2/
 obj-$(CONFIG_MSM7KV2_1X_AUDIO) += qdsp5v2_1x/
-obj-$(CONFIG_QSD_AUDIO) += qdsp6/
+ifdef CONFIG_MACH_HTCLEO
+obj-$(CONFIG_MSM_QDSP6) += qdsp6_1550/
+else
+obj-$(CONFIG_MSM_QDSP6) += qdsp6/
+endif
 obj-$(CONFIG_MSM8X60_AUDIO) += qdsp6v2/
 obj-$(CONFIG_MSM8X60_AUDIO) += htc_acoustic_8x60.o
 obj-$(CONFIG_MSM_HW3D) += hw3d.o
@@ -194,11 +203,15 @@ obj-$(CONFIG_MACH_BRAVOC) += board-bravoc-rfkill.o board-bravoc-audio.o
 obj-$(CONFIG_MACH_BRAVOC) += board-bravoc-wifi.o htc_awb_cal.o
 obj-$(CONFIG_MACH_BRAVOC) += board-bravoc-microp.o
 
-obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-audio.o
-obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-acoustic.o
 obj-$(CONFIG_MACH_HTCLEO) += board-htcleo.o board-htcleo-panel.o board-htcleo-keypad.o
 obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-ts.o board-htcleo-mmc.o ieee754-df.o
-obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-microp.o
+
+obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-audio.o board-htcleo-acoustic.o
+obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-rfkill.o board-htcleo-wifi.o board-htcleo-microp.o
+obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-proximity.o board-htcleo-ls.o   board-htcleo-gsensor.o
+obj-$(CONFIG_HTCLEO_BACKLIGHT) += board-htcleo-bl.o
+obj-$(CONFIG_HTCLEO_BACKLIGHT_LED) += board-htcleo-bl-led.o
+obj-$(CONFIG_HTCLEO_BTN_BACKLIGHT_MANAGER) += board-htcleo-btn_backlight-manager.o
 
 # MSM7x30 boards
 obj-$(CONFIG_ARCH_MSM7X30) += panel-samsungwvga-tl2796a.o panel-samsungwvga-s6e63m0.o panel-sonywvga-s6d16a0x21-7x30.o
