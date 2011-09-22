@@ -1,7 +1,7 @@
 /*
  * Automatically generated C config: don't edit
  * Linux kernel version: 2.6.35.10
- * Tue Sep 20 01:23:32 2011
+ * Wed Sep 21 21:34:51 2011
  */
 #define AUTOCONF_INCLUDED
 #define CONFIG_IP_NF_TARGET_REDIRECT 1
