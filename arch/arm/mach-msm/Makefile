@@ -144,6 +144,7 @@ obj-$(CONFIG_MSM_QDSP6) += qdsp6_1550/
 else
 obj-$(CONFIG_MSM_QDSP6) += qdsp6/
 endif
+
 obj-$(CONFIG_MSM8X60_AUDIO) += qdsp6v2/
 obj-$(CONFIG_MSM8X60_AUDIO) += htc_acoustic_8x60.o
 obj-$(CONFIG_MSM_HW3D) += hw3d.o
@@ -208,7 +209,7 @@ obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-ts.o board-htcleo-mmc.o ieee754-df.o
 
 obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-audio.o board-htcleo-acoustic.o
 obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-rfkill.o board-htcleo-wifi.o board-htcleo-microp.o
-obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-proximity.o board-htcleo-ls.o   board-htcleo-gsensor.o
+obj-$(CONFIG_MACH_HTCLEO) += board-htcleo-proximity.o board-htcleo-ls.o board-htcleo-gsensor.o
 obj-$(CONFIG_HTCLEO_BACKLIGHT) += board-htcleo-bl.o
 obj-$(CONFIG_HTCLEO_BACKLIGHT_LED) += board-htcleo-bl-led.o
 obj-$(CONFIG_HTCLEO_BTN_BACKLIGHT_MANAGER) += board-htcleo-btn_backlight-manager.o
