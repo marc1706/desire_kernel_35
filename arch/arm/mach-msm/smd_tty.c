@@ -348,3 +348,4 @@ static int __init smd_tty_init(void)
 }
 
 module_init(smd_tty_init);
+

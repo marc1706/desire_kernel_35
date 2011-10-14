@@ -56,3 +56,4 @@ extern void amss_get_str_value(int, char*, size_t);
 
  
 #endif	//LOCK
+
