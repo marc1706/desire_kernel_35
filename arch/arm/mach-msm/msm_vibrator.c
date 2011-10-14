@@ -22,6 +22,7 @@
 
 #include <mach/msm_rpcrouter.h>
 #include <mach/msm_rpc_version.h>
+#include <mach/amss_para.h>
 
 #define VIB_INFO_LOG(fmt, ...) \
 		printk(KERN_INFO "[VIB]" fmt, ##__VA_ARGS__)

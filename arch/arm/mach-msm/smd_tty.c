@@ -27,6 +27,7 @@
 #include <linux/tty_flip.h>
 
 #include <mach/msm_smd.h>
+#include <mach/amss_para.h>
 #include "board-htcleo.h"
 
 #define MAX_SMD_TTYS 32
@@ -48,6 +49,7 @@ static void smd_tty_work_func(struct work_struct *work)
 {
 	unsigned char *ptr;
 	int avail;
+	int failcnt = 0;
 
 	struct smd_tty_info *info = container_of(work,
 						struct smd_tty_info,
@@ -70,8 +72,11 @@ static void smd_tty_work_func(struct work_struct *work)
 		}
 
 		avail = smd_read_avail(info->ch);
-		if (avail == 0)
+		if (avail == 0) {
+			tty->low_latency = 0;
+			tty_flip_buffer_push(tty);
 			break;
+		}
 
 		ptr = NULL;
 		avail = tty_prepare_flip_string(tty, &ptr, avail);
@@ -87,8 +92,13 @@ static void smd_tty_work_func(struct work_struct *work)
 			wake_lock_timeout(&info->wake_lock, HZ / 2);
 			tty->low_latency = 1;
 			tty_flip_buffer_push(tty);
-		} else
+		} else {
+			failcnt++;
 			printk(KERN_ERR "smd_tty_work_func: tty_prepare_flip_string fail\n");
+			if(failcnt > 2) {
+				break;
+			}
+		}
 	}
 
 	mutex_unlock(&smd_tty_lock);
@@ -117,7 +127,10 @@ static int smd_tty_open(struct tty_struct *tty, struct file *f)
 	if (n == 0) {
 		name = "SMD_DS";
 	} else if (n == 1) {
-		name = "SMD_DIAG";
+		 if(__amss_version==1550)
+			name = "SMD_DATA1";
+		 else
+			name = "SMD_DIAG";
 	} else if (n == 9) {
 #if defined(CONFIG_MACH_DESIREC) || defined(CONFIG_ARCH_MSM7X30)
 		name = "SMD_DATA4";
@@ -145,8 +158,9 @@ static int smd_tty_open(struct tty_struct *tty, struct file *f)
 
 	mutex_lock(&smd_tty_lock);
 	tty->driver_data = info;
+
 	if (info->open_count++ == 0) {
-		wake_lock_init(&info->wake_lock, WAKE_LOCK_SUSPEND, name);
+	        wake_lock_init(&info->wake_lock, WAKE_LOCK_SUSPEND, name);
 		info->tty = tty;
 		if (info->ch) {
 			smd_kick(info->ch);
@@ -192,30 +206,46 @@ static int smd_tty_write(struct tty_struct *tty,
 {
 	struct smd_tty_info *info = tty->driver_data;
 	int avail, ret, runfix=0;
+#ifdef CONFIG_MACH_HTCLEO
 	static int init=0;
-	const unsigned char* firstcall="AT@BRIC=0\r";
-	const unsigned char* secondcall="AT+COPS=2\r";
+	const unsigned char* firstcall ="AT@BRIC=0\r";
+	const unsigned char* secondcall="AT+CFUN=0\r";
+	const unsigned char* thirdcall ="AT+COPS=2\r";
 	unsigned int call_len;
-// 	
-	if(len>7 && !init && htcleo_is_nand_boot()) {
-		if(strncmp(buf, "AT+CFUN", 7)==0) {
-			pr_info("SMD AT FIX!\n");
-			call_len = strlen(firstcall);
-			avail = smd_write_avail(info->ch);
-			if (call_len > avail)
-				call_len = avail;
-			ret = smd_write(info->ch, firstcall, call_len);
-			init=1;
-			runfix=1;
-			msleep(100);
-		}
-	}
+#endif
 
 	/* if we're writing to a packet channel we will
 	** never be able to write more data than there
 	** is currently space for
 	*/
+#ifndef CONFIG_MACH_HTCLEO
 	mutex_lock(&smd_tty_lock);
+#endif
+
+#ifdef CONFIG_MACH_HTCLEO
+	if(len>7 && !init && htcleo_is_nand_boot()) {
+		pr_info("NAND boot, writing additional init commands to /dev/smd0");
+
+		call_len = strlen(firstcall);
+		avail = smd_write_avail(info->ch);
+		if (call_len > avail)
+			call_len = avail;
+		ret = smd_write(info->ch, firstcall, call_len);
+
+		call_len = strlen(secondcall);
+		avail = smd_write_avail(info->ch);
+		if (call_len > avail)
+			call_len = avail;
+		ret = smd_write(info->ch, secondcall, call_len);
+
+		call_len = strlen(thirdcall);
+		avail = smd_write_avail(info->ch);
+		if (call_len > avail)
+			call_len = avail;
+		ret = smd_write(info->ch, thirdcall, call_len);
+
+		init=1;
+	}
 	avail = smd_write_avail(info->ch);
 	if (len > avail) {
 		printk(KERN_INFO "%s: buffer full. avail:%d, len:%d\n",
@@ -223,15 +253,11 @@ static int smd_tty_write(struct tty_struct *tty,
 		len = avail;
 	}
 	ret = smd_write(info->ch, buf, len);
-	if(runfix) {
-			msleep(100);
-			pr_info("SMD AT FIX2!\n");
-			call_len = strlen(secondcall);
-			avail = smd_write_avail(info->ch);
-			if (call_len > avail)
-				call_len = avail;
-			ret = smd_write(info->ch, secondcall, call_len);
-	}
+#endif
+
+#ifndef CONFIG_MACH_HTCLEO
+	mutex_unlock(&smd_tty_lock);
+#endif
 	return ret;
 }
 
@@ -322,3 +348,4 @@ static int __init smd_tty_init(void)
 }
 
 module_init(smd_tty_init);
+

@@ -18,6 +18,7 @@
 #include <linux/kernel.h>
 #include <mach/msm_rpcrouter.h>
 #include <mach/msm_rpc_version.h>
+#include <mach/amss_para.h>
 
 /* dog_keepalive server definitions */
 
@@ -43,13 +44,13 @@ static int handle_rpc_call(struct msm_rpc_server *server,
 
 static struct msm_rpc_server rpc_server = {
 	.prog = DOG_KEEPALIVE_PROG,
-	.vers = DOG_KEEPALIVE_VERS,
 	.rpc_call = handle_rpc_call,
 };
 
 static int __init rpc_server_init(void)
 {
 	/* Dual server registration to support backwards compatibility vers */
+	rpc_server.vers = amss_get_num_value(DOG_KEEPALIVE_VERS);
 	return msm_rpc_create_server(&rpc_server);
 }
 
