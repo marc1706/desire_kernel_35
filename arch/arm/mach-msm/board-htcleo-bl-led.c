@@ -29,7 +29,7 @@
 #include <mach/msm_fb.h>
 #include <linux/gpio.h>
 #include <mach/msm_iomap.h>
-#include <mach/board-htcleo-microp.h>
+#include <mach/atmega_microp.h>
 
 //#define DEBUG_LCM
 #ifdef DEBUG_LCM
@@ -154,12 +154,17 @@ static void htcleo_brightness_set(struct led_classdev *led_cdev, enum led_bright
 	mutex_unlock(&htcleo_backlight_lock);
 }
 
+static enum led_brightness htcleo_brightness_get(struct led_classdev *led_cdev)
+{
+	return led_cdev->brightness;
+}
+
 static struct led_classdev htcleo_backlight_led =
 {
 	.name = "lcd-backlight",
 	.brightness = HTCLEO_DEFAULT_BACKLIGHT_BRIGHTNESS,
 	.brightness_set = htcleo_brightness_set,
-//	.brightness_get = htcleo_brightness_get,
+	.brightness_get = htcleo_brightness_get,
 };
 
 static int  htcleo_backlight_probe(struct platform_device *pdev)

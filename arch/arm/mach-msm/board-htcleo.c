@@ -188,11 +188,33 @@ static struct akm8973_platform_data compass_platform_data =
 	.intr = HTCLEO_GPIO_COMPASS_INT_N,
 };
 
+
+///////////////////////////////////////////////////////////////////////
+// LED Driver (drivers/leds/leds-microp.c - Atmega microp driver
+///////////////////////////////////////////////////////////////////////
+
+static struct microp_led_config led_config[] = {
+        {
+                .name = "amber",
+                .type = LED_RGB,
+        },
+        {
+                .name = "green",
+                .type = LED_RGB,
+        },
+};
+
+static struct microp_led_platform_data microp_leds_data = {
+        .num_leds       = ARRAY_SIZE(led_config),
+        .led_config     = led_config,
+};
+
 ///////////////////////////////////////////////////////////////////////
 // Microp
 ///////////////////////////////////////////////////////////////////////
 static struct bma150_platform_data htcleo_g_sensor_pdata = {
 	.microp_new_cmd = 0,
+	.chip_layout = 1,
 };
 
 
@@ -212,8 +234,12 @@ static struct platform_device microp_devices[] = {
 		.id = -1,
 	},
 	{
-		.name = "htcleo-leds",
+		.name = "leds-microp",
 		.id = -1,
+		.dev = {
+			.platform_data = &microp_leds_data,
+		},
+
 	},
 	{
 		.name = "htcleo-lsensor",

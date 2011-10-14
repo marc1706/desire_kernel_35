@@ -186,6 +186,27 @@
 #define HTCLEO_LCD_HSYNC			(137)
 #define HTCLEO_LCD_DE				(138)
 	
+/* Voltage driver */
+#define HTCLEO_TPS65023_MIN_UV_MV		(800)
+#define HTCLEO_TPS65023_MAX_UV_MV		(1350)
+
+/* LEDS */
+#define LED_RGB	(1 << 0)
+struct microp_led_config {
+        const char *name; 
+        uint32_t type;    
+        uint8_t init_value;
+        uint8_t fade_time; 
+        uint16_t led_pin;  
+        uint8_t mask_w[3]; 
+};
+  
+struct microp_led_platform_data {
+        struct microp_led_config *led_config;
+        int num_leds;
+};
+
+
 
 
 int htcleo_pm_set_vreg(int enable, unsigned id);

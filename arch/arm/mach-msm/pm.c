@@ -365,7 +365,10 @@ static int msm_sleep(int sleep_mode, uint32_t sleep_delay, int from_idle)
 	int ret;
 	int rv = -EINTR;
 	bool invalid_inital_state = false;
-
+#if defined(CONFIG_MACH_HTCLEO) 
+	if(!htcleo_is_nand_boot() && sleep_mode<2)
+		sleep_mode=2;
+#endif
 	if (board_mfg_mode() == 4) /*power test mode*/
 		gpio_set_diag_gpio_table(
 			(unsigned long *)board_get_mfg_sleep_gpio_table());
