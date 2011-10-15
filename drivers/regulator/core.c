@@ -2842,7 +2842,7 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
 	list_add(&rdev->list, &regulator_list);
 out:
 	mutex_unlock(&regulator_list_mutex);
-	regulator_debug_create_directory(rdev);
+	//regulator_debug_create_directory(rdev); // get rid of this
 	return rdev;
 
 unset_supplies:

@@ -45,6 +45,7 @@
 #include <mach/hardware.h>
 #include <mach/system.h>
 #include <mach/msm_iomap.h>
+#include <mach/htc_usb.h>
 #include <mach/msm_flashlight.h>
 #include <mach/msm_serial_hs.h>
 #include <mach/msm_hsusb.h>
@@ -282,125 +283,63 @@ static struct i2c_board_info base_i2c_devices[] =
 // USB 
 ///////////////////////////////////////////////////////////////////////
 
-extern void notify_usb_connected(int);
+static uint opt_usb_h2w_sw;
+module_param_named(usb_h2w_sw, opt_usb_h2w_sw, uint, 0);
 
-static int htcleo_phy_init_seq[] = {0x0C, 0x31,0x0C, 0x31, 0x30, 0x32, 0x1D, 0x0D, 0x1D, 0x10, -1};
+static uint32_t usb_phy_3v3_table[] =
+{
+    PCOM_GPIO_CFG(HTCLEO_GPIO_USBPHY_3V3_ENABLE, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_4MA)
+};
 
+static int htcleo_phy_init_seq[] ={0x0C, 0x31, 0x30, 0x32, 0x1D, 0x0D, 0x1D, 0x10, -1};
+
+static uint32_t usb_ID_PIN_input_table[] = {
+	PCOM_GPIO_CFG(HTCLEO_GPIO_USB_ID_PIN, 0, GPIO_INPUT, GPIO_NO_PULL, GPIO_4MA),
+	PCOM_GPIO_CFG(HTCLEO_GPIO_USB_ID1_PIN, 0, GPIO_INPUT, GPIO_NO_PULL, GPIO_4MA),
+};
+
+static uint32_t usb_ID_PIN_ouput_table[] = {
+	PCOM_GPIO_CFG(HTCLEO_GPIO_USB_ID_PIN, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_4MA),
+};
+
+void config_htcleo_usb_id_gpios(bool output)
+{
+	if (output) {
+		config_gpio_table(usb_ID_PIN_ouput_table, ARRAY_SIZE(usb_ID_PIN_ouput_table));
+		gpio_set_value(HTCLEO_GPIO_USB_ID_PIN, 1);
+		printk(KERN_INFO "%s %d output high\n",  __func__, HTCLEO_GPIO_USB_ID_PIN);
+	} else {
+		config_gpio_table(usb_ID_PIN_input_table, ARRAY_SIZE(usb_ID_PIN_input_table));
+		printk(KERN_INFO "%s %d input none pull\n",  __func__, HTCLEO_GPIO_USB_ID_PIN);
+	}
+}
+
+/*
+* based on bravo_usb_phy_reset
+* added by marc1706
+*/
 static void htcleo_usb_phy_reset(void)
 {
-	u32 id;
-	int ret;
-
-	id = PCOM_CLKRGM_APPS_RESET_USB_PHY;
-	ret = msm_proc_comm(PCOM_CLK_REGIME_SEC_RESET_ASSERT, &id, NULL);
-	if (ret) {
-		pr_err("%s: Cannot assert (%d)\n", __func__, ret);
-		return;
-	}
-
-	msleep(1);
-
-	id = PCOM_CLKRGM_APPS_RESET_USB_PHY;
-	ret = msm_proc_comm(PCOM_CLK_REGIME_SEC_RESET_DEASSERT, &id, NULL);
-	if (ret) {
-		pr_err("%s: Cannot assert (%d)\n", __func__, ret);
-		return;
+	printk(KERN_INFO "%s\n", __func__);
+	msm_hsusb_8x50_phy_reset();
+	if (usb_phy_error) {
+		printk(KERN_INFO "%s: power cycle usb phy\n",
+			__func__);
+		gpio_set_value(HTCLEO_GPIO_USBPHY_3V3_ENABLE, 0);
+		mdelay(10);
+		gpio_set_value(HTCLEO_GPIO_USBPHY_3V3_ENABLE, 1);
+		mdelay(10);
+		msm_hsusb_8x50_phy_reset();
 	}
 }
 
-static void htcleo_usb_hw_reset(bool enable)
-{
-	u32 id;
-	int ret;
-	u32 func;
-
-	id = PCOM_CLKRGM_APPS_RESET_USBH;
-	if (enable)
-		func = PCOM_CLK_REGIME_SEC_RESET_ASSERT;
-	else
-		func = PCOM_CLK_REGIME_SEC_RESET_DEASSERT;
-	ret = msm_proc_comm(func, &id, NULL);
-	if (ret)
-		pr_err("%s: Cannot set reset to %d (%d)\n", __func__, enable,
-		       ret);
-}
-
-
+// modified to further reflect bravo kernel code
 static struct msm_hsusb_platform_data msm_hsusb_pdata = {
-	.phy_init_seq		= htcleo_phy_init_seq,
-	.phy_reset		= htcleo_usb_phy_reset,
-	.hw_reset		= htcleo_usb_hw_reset,
-	.usb_connected		= notify_usb_connected,
-};
-
-static char *usb_functions_ums[] = {
-	"usb_mass_storage",
-};
-
-static char *usb_functions_ums_adb[] = {
-	"usb_mass_storage",
-	"adb",
-};
-
-static char *usb_functions_rndis[] = {
-	"rndis",
-};
-
-static char *usb_functions_rndis_adb[] = {
-	"rndis",
-	"adb",
-};
-
-#ifdef CONFIG_USB_ANDROID_DIAG
-static char *usb_functions_adb_diag[] = {
-	"usb_mass_storage",
-	"adb",
-	"diag",
-};
-#endif
-
-static char *usb_functions_all[] = {
-#ifdef CONFIG_USB_ANDROID_RNDIS
-	"rndis",
-#endif
-	"usb_mass_storage",
-	"adb",
-#ifdef CONFIG_USB_ANDROID_ACM
-	"acm",
-#endif
-#ifdef CONFIG_USB_ANDROID_DIAG
-	"diag",
-#endif
-};
-
-static struct android_usb_product usb_products[] = {
-	{
-		.product_id	= 0x4e11,
-		.num_functions	= ARRAY_SIZE(usb_functions_ums),
-		.functions	= usb_functions_ums,
-	},
-	{
-		.product_id	= 0x4e12,
-		.num_functions	= ARRAY_SIZE(usb_functions_ums_adb),
-		.functions	= usb_functions_ums_adb,
-	},
-	{
-		.product_id	= 0x4e13,
-		.num_functions	= ARRAY_SIZE(usb_functions_rndis),
-		.functions	= usb_functions_rndis,
-	},
-	{
-		.product_id	= 0x4e14,
-		.num_functions	= ARRAY_SIZE(usb_functions_rndis_adb),
-		.functions	= usb_functions_rndis_adb,
-	},
-#ifdef CONFIG_USB_ANDROID_DIAG
-	{
-		.product_id	= 0x4e17,
-		.num_functions	= ARRAY_SIZE(usb_functions_adb_diag),
-		.functions	= usb_functions_adb_diag,
-	},
-#endif
+	.phy_init_seq			= htcleo_phy_init_seq,
+	.phy_reset				= htcleo_usb_phy_reset,
+	.usb_id_pin_gpio		= HTCLEO_GPIO_USB_ID_PIN, // for detecting usb connection
+	.config_usb_id_gpios	= config_htcleo_usb_id_gpios, // from bravo kernel
+	.accessory_detect = 1, /* detect by ID pin gpio */
 };
 
 static struct usb_mass_storage_platform_data mass_storage_pdata = {
@@ -420,8 +359,7 @@ static struct platform_device usb_mass_storage_device = {
 
 #ifdef CONFIG_USB_ANDROID_RNDIS
 static struct usb_ether_platform_data rndis_pdata = {
-	/* ethaddr is filled by board_serialno_setup */
-	.vendorID	= 0x18d1,
+	.vendorID	= 0x0bb4,
 	.vendorDescr	= "HTC",
 };
 
@@ -435,8 +373,8 @@ static struct platform_device rndis_device = {
 #endif
 
 static struct android_usb_platform_data android_usb_pdata = {
-	.vendor_id	= 0x18d1,
-	.product_id	= 0x4e11,
+	.vendor_id	= 0x0bb4,
+	.product_id	= 0x0c02,
 	.version	= 0x0100,
 	.product_name		= "Android Phone",
 	.manufacturer_name	= "HTC",
@@ -453,6 +391,32 @@ static struct platform_device android_usb_device = {
 		.platform_data = &android_usb_pdata,
 	},
 };
+static void htcleo_add_usb_devices(void)
+{
+	android_usb_pdata.products[0].product_id =
+		android_usb_pdata.product_id;
+	android_usb_pdata.serial_number = board_serialno();
+	msm_hsusb_pdata.serial_number = board_serialno();
+	msm_device_hsusb.dev.platform_data = &msm_hsusb_pdata;
+	config_htcleo_usb_id_gpios(0);
+	config_gpio_table(usb_phy_3v3_table, ARRAY_SIZE(usb_phy_3v3_table));
+	gpio_set_value(HTCLEO_GPIO_USBPHY_3V3_ENABLE, 1);
+	platform_device_register(&msm_device_hsusb);
+	platform_device_register(&usb_mass_storage_device);
+#ifdef CONFIG_USB_ANDROID_RNDIS
+	platform_device_register(&rndis_device);
+#endif
+	platform_device_register(&android_usb_device);
+}
+
+unsigned htcleo_get_vbus_state(void)
+{
+	if(readl(MSM_SHARED_RAM_BASE+0xef20c))
+		return 1;
+	else
+		return 0;
+}
+
 
 ///////////////////////////////////////////////////////////////////////
 // Flashlight
@@ -916,12 +880,6 @@ static struct platform_device *devices[] __initdata =
 	&android_pmem_mdp_device,
 	&android_pmem_adsp_device,
 	&android_pmem_venc_device,
-	&msm_device_hsusb,
-	&usb_mass_storage_device,
-#ifdef CONFIG_USB_ANDROID_RNDIS
-	&rndis_device,
-#endif
-	&android_usb_device,
 	&msm_device_i2c,
 	&ds2746_battery_pdev,
 	&htc_battery_pdev,
@@ -971,6 +929,7 @@ static struct msm_i2c_device_platform_data msm_i2c_pdata = {
 
 static void __init msm_device_i2c_init(void)
 {
+	msm_i2c_gpio_init();
 	msm_device_i2c.dev.platform_data = &msm_i2c_pdata;
 }
 
@@ -1055,7 +1014,7 @@ static void __init htcleo_init(void)
 	mdelay(100);
 	htcleo_kgsl_power(true);
 	
-	msm_device_hsusb.dev.platform_data = &msm_hsusb_pdata;
+	//msm_device_hsusb.dev.platform_data = &msm_hsusb_pdata; //  already in htcleo_add_usb_devices()
 	msm_device_uart_dm1.dev.platform_data = &msm_uart_dm1_pdata;
 	msm_device_uart_dm1.name = "msm_serial_hs_bcm"; /* for bcm */
     	msm_device_uart_dm1.resource[3].end = 6;
@@ -1063,6 +1022,16 @@ static void __init htcleo_init(void)
 	platform_add_devices(devices, ARRAY_SIZE(devices));
 
 	htcleo_init_panel();
+
+	if (!opt_usb_h2w_sw) {
+#ifdef CONFIG_USB_FUNCTION
+		msm_register_usb_phy_init_seq(htcleo_phy_init_seq);
+		msm_add_usb_devices(htcleo_usb_phy_reset, NULL);
+#endif
+#ifdef CONFIG_USB_ANDROID
+		htcleo_add_usb_devices();
+#endif
+	}
 
 	i2c_register_board_info(0, base_i2c_devices, ARRAY_SIZE(base_i2c_devices));
 	

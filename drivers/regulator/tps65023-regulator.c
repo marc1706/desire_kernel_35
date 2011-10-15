@@ -505,8 +505,8 @@ static struct regulator_ops tps65023_ldo_ops = {
 	.list_voltage = tps65023_ldo_list_voltage,
 };
 
-static int __devinit tps_65023_probe(struct i2c_client *client,
-				     const struct i2c_device_id *id)
+static
+int tps_65023_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	static int desc_id;
 	const struct tps_info *info = (void *)id->driver_data;
@@ -554,8 +554,17 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
 		if (IS_ERR(rdev)) {
 			dev_err(&client->dev, "failed to register %s\n",
 				id->name);
-			error = PTR_ERR(rdev);
-			goto fail;
+
+			/* Unregister */
+			while (i)
+				regulator_unregister(tps->rdev[--i]);
+
+			tps->client = NULL;
+
+			/* clear the client data in i2c */
+			i2c_set_clientdata(client, NULL);
+			kfree(tps);
+			return PTR_ERR(rdev);
 		}
 
 		/* Save regulator for cleanup */
@@ -565,13 +574,6 @@ static int __devinit tps_65023_probe(struct i2c_client *client,
 	i2c_set_clientdata(client, tps);
 
 	return 0;
-
- fail:
-	while (--i >= 0)
-		regulator_unregister(tps->rdev[i]);
-
-	kfree(tps);
-	return error;
 }
 
 /**
@@ -588,6 +590,10 @@ static int __devexit tps_65023_remove(struct i2c_client *client)
 	for (i = 0; i < TPS65023_NUM_REGULATOR; i++)
 		regulator_unregister(tps->rdev[i]);
 
+	tps->client = NULL;
+
+	/* clear the client data in i2c */
+	i2c_set_clientdata(client, NULL);
 	kfree(tps);
 
 	return 0;

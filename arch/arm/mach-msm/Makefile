@@ -8,7 +8,7 @@ endif
 
 ifndef CONFIG_ARCH_MSM8X60
 obj-y += irq.o pmic.o vreg.o dex_comm.o
-# obj-y += devices.o
+obj-y += devices.o
 obj-$(CONFIG_ARCH_QSD8X50) += devices-qsd8x50.o
 endif
 obj-y += pwrtest.o
