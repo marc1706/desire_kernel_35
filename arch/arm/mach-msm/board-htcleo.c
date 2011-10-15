@@ -45,6 +45,7 @@
 #include <mach/hardware.h>
 #include <mach/system.h>
 #include <mach/msm_iomap.h>
+#include <mach/perflock.h>
 #include <mach/htc_usb.h>
 #include <mach/msm_flashlight.h>
 #include <mach/msm_serial_hs.h>
@@ -943,10 +944,20 @@ static struct msm_acpu_clock_platform_data htcleo_clock_data = {
 	.max_speed_delta_khz	= 256000,
 	.vdd_switch_time_us	= 62,
 	.power_collapse_khz	= 245000,
-	.wait_for_irq_khz	= 245000,
+	.wait_for_irq_khz	= 245000, // @todo: bravo sets this to 0, try it out
 //	.wait_for_irq_khz	= 19200,   // TCXO
 };
 
+static unsigned htcleo_perf_acpu_table[] = {
+	245000000,
+	576000000,
+	998400000,
+};
+
+static struct perflock_platform_data htcleo_perflock_data = {
+	.perf_acpu_table = htcleo_perf_acpu_table,
+	.table_size = ARRAY_SIZE(htcleo_perf_acpu_table),
+};
 ///////////////////////////////////////////////////////////////////////
 // Reset
 ///////////////////////////////////////////////////////////////////////
@@ -999,6 +1010,8 @@ static void __init htcleo_init(void)
 
 	msm_acpu_clock_init(&htcleo_clock_data);
 	
+	perflock_init(&htcleo_perflock_data);
+
 	init_dex_comm();
 
 	bt_export_bd_address();
@@ -1013,8 +1026,7 @@ static void __init htcleo_init(void)
 	htcleo_kgsl_power(false);
 	mdelay(100);
 	htcleo_kgsl_power(true);
-	
-	//msm_device_hsusb.dev.platform_data = &msm_hsusb_pdata; //  already in htcleo_add_usb_devices()
+
 	msm_device_uart_dm1.dev.platform_data = &msm_uart_dm1_pdata;
 	msm_device_uart_dm1.name = "msm_serial_hs_bcm"; /* for bcm */
     	msm_device_uart_dm1.resource[3].end = 6;
