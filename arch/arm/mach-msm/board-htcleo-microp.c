@@ -454,7 +454,7 @@ static void microp_i2c_intr_work_func(struct work_struct *work)
 	}
 
 	if (intr_status & IRQ_PROXIMITY) {
-		// p_sensor_irq_handler();
+		p_sensor_irq_handler();
 	}
 
 	enable_irq(client->irq);
