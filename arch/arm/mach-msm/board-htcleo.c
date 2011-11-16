@@ -50,7 +50,9 @@
 #include <mach/msm_flashlight.h>
 #include <mach/msm_serial_hs.h>
 #include <mach/msm_hsusb.h>
+#ifdef CONFIG_SERIAL_BCM_BT_LPM
 #include <mach/bcm_bt_lpm.h>
+#endif
 #include <mach/htc_headset_mgr.h>
 #include <mach/htc_headset_gpio.h>
 
@@ -78,13 +80,14 @@ static unsigned int nand_boot = 0;
 ///////////////////////////////////////////////////////////////////////
 int htcleo_is_nand_boot(void)
 {
-	return nand_boot;	
+	return nand_boot;
 }
 
 static int __init parse_tag_nand_boot(const struct tag *tag)
 {
 	struct tag_magldr_entry *mentry = (struct tag_magldr_entry *)(&tag->u);
 	nand_boot = !(unsigned int)mentry->fNoNandBoot;
+	if(*((unsigned*)&tag->u)==0x004b4c63) nand_boot = 2; // cLK signature
 	pr_info("Nand Boot: %d\n", nand_boot);
 	return 0;
 }
