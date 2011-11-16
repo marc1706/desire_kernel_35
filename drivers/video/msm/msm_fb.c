@@ -1321,7 +1321,15 @@ static int msmfb_probe(struct platform_device *pdev)
 	msmfb->sleeping = WAKING;
 
 #ifdef CONFIG_FB_MSM_LOGO
-	if (!load_565rle_image(INIT_IMAGE_FILE));
+	if (!load_565rle_image(INIT_IMAGE_FILE)) {
+		/* Flip buffer */
+		msmfb->update_info.left = 0;
+		msmfb->update_info.top = 0;
+		msmfb->update_info.eright = msmfb->xres;
+	        msmfb->update_info.ebottom = msmfb->yres;
+		msmfb_pan_update(msmfb->fb, 0, 0, msmfb->xres,
+				 msmfb->yres, 0, 1);
+	}
 #endif
 	/* Jay, 29/12/08' */
 	display_notifier(display_notifier_callback, NOTIFY_MSM_FB);

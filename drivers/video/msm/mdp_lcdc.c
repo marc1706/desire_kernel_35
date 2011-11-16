@@ -370,19 +370,10 @@ static int lcdc_hw_init(struct mdp_lcdc_info *lcdc)
 	mdp_writel(lcdc->mdp, 0, MDP_DMA_P_OUT_XY);
 
 	dma_cfg = mdp_readl(lcdc->mdp, MDP_DMA_P_CONFIG);
-	// if (lcdc->mdp->mdp_dev.overrides & MSM_MDP_DMA_PACK_ALIGN_LSB)
-	//	dma_cfg &= ~DMA_PACK_ALIGN_MSB;
-	// else
-	//	dma_cfg |= DMA_PACK_ALIGN_MSB;
-	
-	#if defined(CONFIG_MACH_HTCLEO)
-		dma_cfg |= (DMA_PACK_ALIGN_MSB |
-		DMA_PACK_PATTERN_RGB);
-		dma_cfg |= DMA_OUT_SEL_LCDC;
-		dma_cfg |= DMA_IBUF_FORMAT_RGB565;
-		dma_cfg &= ~DMA_DITHER_EN;
-		dma_cfg &= ~DMA_DST_BITS_MASK;
-	#endif
+	if (lcdc->mdp->mdp_dev.overrides & MSM_MDP_DMA_PACK_ALIGN_LSB)
+		dma_cfg &= ~DMA_PACK_ALIGN_MSB;
+	else
+		dma_cfg |= DMA_PACK_ALIGN_MSB;
 
 	dma_cfg |= (DMA_PACK_PATTERN_RGB |
 		   DMA_DITHER_EN);

@@ -1,7 +1,7 @@
 /*
  * Automatically generated C config: don't edit
  * Linux kernel version: 2.6.35.10
- * Mon Oct 17 21:58:39 2011
+ * Sat Nov 12 00:20:38 2011
  */
 #define AUTOCONF_INCLUDED
 #define CONFIG_IP_NF_TARGET_REDIRECT 1
@@ -64,6 +64,7 @@
 #define CONFIG_WIRELESS_EXT_SYSFS 1
 #define CONFIG_SWITCH_GPIO 1
 #define CONFIG_CRYPTO_HMAC 1
+#define CONFIG_CPU_FREQ_GOV_SMARTASS2 1
 #define CONFIG_IP_NF_ARPTABLES 1
 #define CONFIG_CACHE_FLUSH_RANGE_LIMIT 0x40000
 #define CONFIG_MTD_PARTITIONS 1
