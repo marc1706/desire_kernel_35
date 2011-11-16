@@ -106,11 +106,10 @@ static struct regulator_consumer_supply tps65023_dcdc1_supplies[] =
 static struct regulator_init_data tps65023_data[5] =
 {
     {
-        .constraints =
-		{
+        .constraints = {
             .name = "dcdc1", /* VREG_MSMC2_1V29 */
-            .min_uV = 1000000,
-            .max_uV = 1300000,
+            .min_uV = HTCLEO_TPS65023_MIN_UV_MV * 1000,
+            .max_uV = HTCLEO_TPS65023_MAX_UV_MV * 1000,
             .valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,
         },
         .consumer_supplies = tps65023_dcdc1_supplies,
