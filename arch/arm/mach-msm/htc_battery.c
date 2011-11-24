@@ -48,7 +48,7 @@
 #endif
 
 static struct wake_lock vbus_wake_lock;
-//extern void notify_usb_connected(int);
+
 enum {
 	HTC_BATT_DEBUG_M2A_RPC = 1U << 0,
 	HTC_BATT_DEBUG_A2M_RPC = 1U << 1,
@@ -224,11 +224,6 @@ void notify_cable_status(int status)
 {
 	pr_info("notify_cable_status(%d)\n", status);
 	msm_hsusb_set_vbus_state(status);
-/*
-	power_supply_changed(&htc_power_supplies[CHARGER_USB]);
-	power_supply_changed(&htc_power_supplies[CHARGER_AC]);
-	power_supply_changed(&htc_power_supplies[CHARGER_BATTERY]);
-*/
 }
 
 // called from DEX intrrupt

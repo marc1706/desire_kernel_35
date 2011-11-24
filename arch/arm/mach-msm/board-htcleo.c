@@ -942,6 +942,7 @@ static void do_sdc1_reset(void)
 	*sdc1_clk &= ~(1 << 9);
 }
 
+#ifdef CONFIG_HTCLEO_BLINK_ON_BOOT
 static void __init htcleo_blink_camera_led(void){
 	volatile unsigned *bank6_in, *bank6_out;
 	bank6_in = (unsigned int*)(MSM_GPIO1_BASE + 0x0864);
@@ -951,6 +952,7 @@ static void __init htcleo_blink_camera_led(void){
 	*bank6_out = *bank6_in | 0x200000;
 	mdelay(200);
 }
+#endif // CONFIG_HTCLEO_BLINK_ON_BOOT
 
 ///////////////////////////////////////////////////////////////////////
 // Init
@@ -1000,8 +1002,10 @@ static void __init htcleo_init(void)
 	htcleo_init_mmc(0);
 	platform_device_register(&htcleo_timed_gpios);
 	
+#ifdef CONFIG_HTCLEO_BLINK_ON_BOOT
 	/* Blink the camera LED shortly to show that we're alive! */
 	htcleo_blink_camera_led();
+#endif // CONFIG_HTCLEO_BLINK_ON_BOOT
 
 }
 
