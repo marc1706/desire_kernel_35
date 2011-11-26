@@ -1,6 +1,6 @@
 #
 # Automatically generated make config: don't edit
-# Linux kernel version: 2.6.35.7
+# Linux kernel version: 2.6.35.14
 # Sat Feb 12 20:00:43 2011
 #
 CONFIG_ARM=y
@@ -35,7 +35,7 @@ CONFIG_BROKEN_ON_SMP=y
 CONFIG_LOCK_KERNEL=y
 CONFIG_INIT_ENV_ARG_LIMIT=32
 CONFIG_CROSS_COMPILE=""
-CONFIG_LOCALVERSION="-marc1706s_desire_0.0.1i"
+CONFIG_LOCALVERSION="-marc1706s_desire_0.0.1k"
 # CONFIG_LOCALVERSION_AUTO is not set
 CONFIG_HAVE_KERNEL_GZIP=y
 CONFIG_HAVE_KERNEL_LZMA=y
