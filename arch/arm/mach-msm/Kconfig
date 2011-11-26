@@ -1634,6 +1634,13 @@ choice
 		Works in standard Linux distros. Tested in GNOME.
 endchoice
 
+config HTCLEO_BTN_BACKLIGHT_MANAGER
+	depends on MACH_HTCLEO
+	default y
+	bool "Use button backlight manager"
+	help
+	  Use kernel button backlight manager to turn on/off backlight
+
 config MICROP_COMMON
 	tristate "MICROP COMMON Driver"
 	depends on I2C
