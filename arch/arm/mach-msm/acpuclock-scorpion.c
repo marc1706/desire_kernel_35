@@ -721,7 +721,7 @@ ssize_t acpuclk_get_vdd_levels_str(char *buf)
 void acpuclk_set_vdd(unsigned acpu_khz, int vdd)
 {
 	int i;
-	vdd = vdd / 25 * 25;	//! regulator only accepts multiples of 25 (mV)
+	vdd = (vdd / HTCLEO_TPS65023_UV_STEP_MV) * HTCLEO_TPS65023_UV_STEP_MV;
 	mutex_lock(&drv_state.lock);
 	for (i = 0; acpu_freq_tbl[i].acpu_khz; i++)
 	{

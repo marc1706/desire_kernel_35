@@ -174,6 +174,7 @@
 /* Voltage driver */
 #define HTCLEO_TPS65023_MIN_UV_MV		(800)
 #define HTCLEO_TPS65023_MAX_UV_MV		(1350)
+#define HTCLEO_TPS65023_UV_STEP_MV		(25)
 
 /* LEDS */
 #define LED_RGB	(1 << 0)
