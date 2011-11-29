@@ -4,6 +4,6 @@ make ARCH=arm CROSS_COMPILE=/root/CodeSourcery/Sourcery_G++_Lite_OLDTOOLCHAIN/bi
 git log > ./currentrelease.txt
 ./compiledcopy
 
-tar cvzf ../"ACAOmegaHTC35Kernel`date +"%m%d%y%H%M"`".tar.gz ../compiled/
-mv ../ACAOmegaSaviorKernel* ../ACAKernels
+tar cvzf ../"ACAOmegaHTC35KernelSENSE`date +"%m%d%y%H%M"`".tar.gz ../compiled/
+mv ../ACAOmegaHTC35Kernel* ../ACAKernels
 
