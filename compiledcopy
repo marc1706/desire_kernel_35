@@ -7,11 +7,7 @@ fi;
 #packageprep
 if [ ! -e ../compiled ];
 then
-	mkdir ../compiled;
-	mkdir ../compiled/root;
-	mkdir ../compiled/root/system;
-	mkdir ../compiled/root/system/lib;
-	mkdir ../compiled/root/system/lib/modules;
+	mkdir ../compiled ../compiled/root ../compiled/root/system ../compiled/root/system/lib ../compiled/root/system/lib/modules;
 fi;
 
 #packaging
