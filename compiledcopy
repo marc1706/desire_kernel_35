@@ -1,26 +1,28 @@
+CMP=../compiled
+
 #cleanup
-if [ -e ../compiled ];
+if [ -e $CMP ];
 then
-	rm -r ../compiled;
+	rm -r $CMP;
 fi;
 
 #packageprep
-if [ ! -e ../compiled ];
+if [ ! -e $CMP ];
 then
-	mkdir ../compiled ../compiled/root ../compiled/root/system ../compiled/root/system/lib ../compiled/root/system/lib/modules;
+	mkdir $CMP $CPM/modules;
 fi;
 
 #packaging
-cp ./currentrelease.txt ../compiled/currentrelease.txt
-cp ./arch/arm/boot/zImage ../compiled/zImage
-cp ./drivers/net/wireless/bcm4329/bcm4329.ko ../compiled/root/system/lib/modules/bcm4329.ko
-cp ./fs/cifs/cifs.ko ../compiled/root/system/lib/modules/
-cp ./fs/fuse/fuse.ko ../compiled/root/system/lib/modules/
-cp ./fs/lockd/lockd.ko ../compiled/root/system/lib/modules/
-cp ./fs/nfs/nfs.ko ../compiled/root/system/lib/modules/
-cp ./fs/nfs_common/nfs_acl.ko ../compiled/root/system/lib/modules/
-cp ./fs/nfsd/nfsd.ko ../compiled/root/system/lib/modules/
-cp ./fs/nls/nls_utf8.ko ../compiled/root/system/lib/modules/
-cp ./net/ipv6/*.ko ../compiled/root/system/lib/modules/
-cp ./net/sunrpc/auth_gss/*.ko ../compiled/root/system/lib/modules/
-cp ./net/sunrpc/*.ko ../compiled/root/system/lib/modules/
+cp ./currentrelease.txt $CMP/
+cp ./arch/arm/boot/zImage $CMP/
+cp ./drivers/net/wireless/bcm4329/bcm4329.ko $CMP/modules/
+cp ./fs/cifs/cifs.ko $CMP/modules/
+cp ./fs/fuse/fuse.ko $CMP/modules/
+cp ./fs/lockd/lockd.ko $CMP/modules/
+cp ./fs/nfs/nfs.ko $CMP/modules/
+cp ./fs/nfs_common/nfs_acl.ko $CMP/modules/
+cp ./fs/nfsd/nfsd.ko $CMP/modules/
+cp ./fs/nls/nls_utf8.ko $CMP/modules/
+cp ./net/ipv6/*.ko $CMP/modules/
+cp ./net/sunrpc/auth_gss/*.ko $CMP/modules/
+cp ./net/sunrpc/*.ko $CMP/modules/
