@@ -9,7 +9,7 @@ fi;
 #packageprep
 if [ ! -e $CMP ];
 then
-	mkdir $CMP $CPM/modules;
+	mkdir ../compiled ../compiled/root ../compiled/root/system ../compiled/root/system/lib ../compiled/root/system/lib/modules;
 fi;
 
 #packaging
