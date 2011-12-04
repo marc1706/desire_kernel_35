@@ -78,10 +78,12 @@ obj-$(CONFIG_SERIAL_MSM) += msm_serial.o
 obj-$(CONFIG_MSM_SERIAL_DEBUGGER) += msm_serial_debugger.o
 obj-$(CONFIG_WIMAX_SERIAL_MSM) += msm_serial_wimax.o
 obj-$(CONFIG_SERIAL_MSM_HS) += msm_serial_hs.o
+ifndef CONFIG_MACH_HTCLEO
 obj-$(CONFIG_SERIAL_MSM_HS) += msm_serial_hs_ti.o
 obj-$(CONFIG_SERIAL_MSM_HS) += msm_serial_hs_bcm.o
 obj-$(CONFIG_SERIAL_MSM_HS) += msm_serial_hs_brcm.o
 obj-$(CONFIG_SERIAL_MSM_HSL) += msm_serial_hs_lite.o
+endif
 obj-$(CONFIG_SERIAL_NETX) += netx-serial.o
 obj-$(CONFIG_SERIAL_OF_PLATFORM) += of_serial.o
 obj-$(CONFIG_SERIAL_OF_PLATFORM_NWPSERIAL) += nwpserial.o
