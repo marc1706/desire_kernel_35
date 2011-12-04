@@ -35,6 +35,7 @@ this file use q6audio_* function primary, some new was added
 #include <linux/moduleparam.h>
 #include <linux/time.h>
 #include <linux/wait.h>
+#include <linux/slab.h>
 #include <linux/kthread.h>
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
