@@ -1956,6 +1956,7 @@ int q6audio_set_tx_mute(int mute)
     mutex_unlock(&audio_path_lock);
     return 0;
 }
+EXPORT_SYMBOL_GPL(q6audio_set_tx_mute);
 
 int q6audio_set_stream_volume(struct audio_client *ac, int vol)
 {
