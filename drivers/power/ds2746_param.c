@@ -661,6 +661,10 @@ static BOOL __battery_param_udpate(struct battery_type *battery)
 	battery->discharge_mA = (battery->discharge_adc * discharge_adc_to_mv_coef / discharge_adc_to_mv_resl);
 	battery->charge_counter_mAh = (battery->charge_counter_adc * acr_adc_to_mv_coef / acr_adc_to_mv_resl) -	charge_counter_zero_base_mAh;
 	battery->current_mA = battery->current_mA - battery->discharge_mA;
+#if HTC_ENABLE_POWER_DEBUG
+	printk(DRIVER_ZONE " battery.id_adc pre clip: %d\n", battery->id_adc);
+	printk(DRIVER_ZONE " battery.temp_adc pre clip: %d\n", battery->temp_adc);
+#endif
 	/* prevent from adc out of range*/
 	if (battery->id_adc >= id_adc_resl) {
 		battery->id_adc = id_adc_resl - 1;
@@ -678,11 +682,19 @@ static BOOL __battery_param_udpate(struct battery_type *battery)
 	/* battery ID shall be ready first for temp/kadc calculation*/
 	//   if ( id_conversion ) battery->id_ohm = ((float)id_R_kohm / ((float)id_adc_resl/battery->id_adc - 1)) * 1000;     // kohm -> ohm
 	//   else   			  battery->id_ohm = battery->id_adc;
-	battery->id_ohm = battery->id_adc;
-	calibrate_id_ohm(battery);
+	battery->id_ohm = battery->temp_adc;
+#if HTC_ENABLE_POWER_DEBUG
+	printk(DRIVER_ZONE " battery.id_ohm pre calibrate: %d\n", battery->id_ohm);
+#endif /* HTC_ENABLE_POWER_DEBUG*/
+	//calibrate_id_ohm(battery);
+#if HTC_ENABLE_POWER_DEBUG
+	printk(DRIVER_ZONE " battery.id_ohm post calibrate: %d\n", battery->id_ohm);
+#endif /* HTC_ENABLE_POWER_DEBUG*/
 
 	batt_id_index = get_id_index(battery);
-
+#if HTC_ENABLE_POWER_DEBUG
+	printk(DRIVER_ZONE " batt_id: %d\n", batt_id_index);
+#endif /* HTC_ENABLE_POWER_DEBUG*/
 	if (is_allow_batt_id_change) {
 		/*! TODO: batt_id changes immediately; may need to modify in future*/
 		if (batt_id_stable_counter >= 3 && batt_id_index != battery->id_index){
@@ -707,10 +719,21 @@ static BOOL __battery_param_udpate(struct battery_type *battery)
 				batt_id_stable_counter = 0;
 		}
 	}
-
+	temp_01c = get_temp_01c(battery);
+	if (batt_id_index == 5)
+	{
+		//battery->temp_adc = battery->temp_adc * 7;
+		temp_01c = 650 - battery->temp_adc*10;
+	}
 	/* calculate temperature*/
 	//    battery->temp_01c 			  = get_temp_c((float)temp_R_kohm / ((float)temp_adc_resl/battery->temp_adc - 1))*10;
-	temp_01c = get_temp_01c(battery);
+	if(temp_01c == 700)
+		{
+		FL_25[battery->id_index] = 2300;
+		battery->charge_full_real_mAh = FL_25[battery->id_index];
+		battery->charge_full_design_mAh = battery->charge_full_real_mAh;
+		temp_01c = 650 - battery->temp_adc*10;
+		}
 	if (temp_01c >= TEMP_MIN*10)
 		battery->temp_01c = temp_01c;
 	else
