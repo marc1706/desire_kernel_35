@@ -857,6 +857,7 @@ int q6audio_read(struct audio_client *ac, struct audio_buffer *ab)
     r = dal_call_f5(ac->client, AUDIO_OP_READ, &rpc, sizeof(rpc));
     return 0;
 }
+EXPORT_SYMBOL_GPL(q6audio_read);
 
 int q6audio_write(struct audio_client *ac, struct audio_buffer *ab)
 {
@@ -879,6 +880,7 @@ int q6audio_write(struct audio_client *ac, struct audio_buffer *ab)
     r = dal_call_f5(ac->client, AUDIO_OP_WRITE, &rpc, sizeof(rpc));
     return 0;
 }
+EXPORT_SYMBOL_GPL(q6audio_write);
 
 static int audio_rx_volume(struct audio_client *ac, uint32_t dev_id, int32_t volume)
 {
@@ -1916,6 +1918,22 @@ done:
     return res;
 }
 
+int q6audio_set_tx_volume(int level)
+{
+    int vol;
+
+	AUDIO_INFO("%s\n", __func__);
+
+    mutex_lock(&audio_path_lock);
+    vol = q6_device_volume(audio_tx_device_id, level);
+	audio_tx_volume(ac_control, audio_tx_device_id, vol);
+	//_update_audio_tx_volume(ac_control, audio_tx_device_id);
+    mutex_unlock(&audio_path_lock);
+
+    return 0;
+}
+EXPORT_SYMBOL_GPL(q6audio_set_tx_volume);
+
 int q6audio_set_tx_mute(int mute)
 {
     uint32_t adev;
@@ -1938,6 +1956,7 @@ int q6audio_set_tx_mute(int mute)
     mutex_unlock(&audio_path_lock);
     return 0;
 }
+EXPORT_SYMBOL_GPL(q6audio_set_tx_mute);
 
 int q6audio_set_stream_volume(struct audio_client *ac, int vol)
 {
@@ -1952,6 +1971,7 @@ int q6audio_set_stream_volume(struct audio_client *ac, int vol)
     mutex_unlock(&audio_path_lock);
     return 0;
 }
+EXPORT_SYMBOL_GPL(q6audio_set_stream_volume);
 
 int q6audio_set_stream_eq(struct audio_client *ac, struct cad_audio_eq_cfg *eq_cfg)
 {
@@ -2005,6 +2025,7 @@ int q6audio_set_rx_volume(int level)
 #endif
     return 0;
 }
+EXPORT_SYMBOL_GPL(q6audio_set_rx_volume);
 
 static int q6audio_init_rx_volumes()
 {
@@ -2015,14 +2036,14 @@ static int q6audio_init_rx_volumes()
 
     mutex_lock(&audio_path_lock);
 
-    printk("$$$ q6audio_init_rx_volumes\n");
+    AUDIO_INFO("$$$ q6audio_init_rx_volumes\n");
     while (1)
     {
         if (di->id == 0) break;
 
         vol = q6_device_volume(di->id, 100);
         audio_rx_volume(ac_control, di->id, vol);
-        printk("$$ DEV=%08X: vol is %d\n", di->id, vol);
+        AUDIO_INFO("$$ DEV=%08X: vol is %d\n", di->id, vol);
 
         di++;
     }
@@ -2050,6 +2071,7 @@ int q6audio_set_rx_mute(int mute)
     mutex_unlock(&audio_path_lock);
     return 0;
 }
+EXPORT_SYMBOL_GPL(q6audio_set_rx_mute);
 
 static void do_rx_routing(uint32_t device_id, uint32_t acdb_id)
 {
@@ -2119,6 +2141,7 @@ int q6audio_do_routing(uint32_t device_id, uint32_t acdb_id)
     mutex_unlock(&audio_path_lock);
     return 0;
 }
+EXPORT_SYMBOL_GPL(q6audio_do_routing);
 
 int q6audio_set_route(const char *name)
 {
@@ -2291,6 +2314,7 @@ struct audio_client *q6audio_open_pcm(uint32_t bufsz, uint32_t rate,
     return audio_test();
 #endif
 }
+EXPORT_SYMBOL_GPL(q6audio_open_pcm);
 
 int q6audio_close(struct audio_client *ac)
 {
@@ -2305,6 +2329,7 @@ int q6audio_close(struct audio_client *ac)
     audio_allow_sleep();
     return 0;
 }
+EXPORT_SYMBOL_GPL(q6audio_close);
 
 struct audio_client *q6voice_open(uint32_t flags, uint32_t acdb_id)
 {

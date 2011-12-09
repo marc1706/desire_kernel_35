@@ -2,9 +2,9 @@
  *
  * /arch/arm/mach-msm/include/mach/htc_headset_microp.h
  *
- * HTC Micro-P headset driver.
+ *  HTC Micro-P headset detection driver.
  *
- * Copyright (C) 2010 HTC, Inc.
+ *  Copyright (C) 2010 HTC, Inc.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -43,7 +43,6 @@ struct htc_headset_microp_info {
 	struct htc_headset_microp_platform_data pdata;
 	int hpin_gpio_mask;
 	unsigned int hpin_debounce;
-	struct wake_lock hs_wake_lock;
 };
 
 #endif

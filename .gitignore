@@ -57,6 +57,8 @@ include/config/
 include/linux/version.h
 include/generated
 include/config/auto.conf
+include/config/auto.conf.cmd
+include/config/tristate.conf
 include/generated/autoconf.h
 include/generated/compile.h
 
