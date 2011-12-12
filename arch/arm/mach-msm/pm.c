@@ -929,7 +929,7 @@ void msm_pm_flush_console(void)
 }
 
 #if defined(CONFIG_MACH_HTCLEO)
-static void htcleo_save_reset_reason()
+static void htcleo_save_reset_reason(void)
 {
 	/* save restart_reason to be accesible in bootloader @ ramconsole - 0x1000*/
 	uint32_t *bootloader_reset_reason = ioremap(0x2FFB0000, PAGE_SIZE);

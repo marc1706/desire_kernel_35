@@ -1087,10 +1087,11 @@ static void ds2746_program_alarm(struct ds2746_device_info *di, int seconds)
 
 static void ds2746_battery_work(struct work_struct *work)
 {
-	if (!htc_battery_initial)    return;
 	struct ds2746_device_info *di = container_of(work,
 				struct ds2746_device_info, monitor_work);
 	unsigned long flags;
+
+	if (!htc_battery_initial)    return;
 
 #if HTC_BATTERY_DS2746_DEBUG_ENABLE
 	pr_info("[ds2746_batt] ds2746_battery_work*\n");
@@ -1113,8 +1114,10 @@ static void ds2746_battery_work(struct work_struct *work)
 
 static void ds2746_battery_alarm(struct alarm *alarm)
 {
-	if (!htc_battery_initial)    return;
 	struct ds2746_device_info *di = container_of(alarm, struct ds2746_device_info, alarm);
+
+	if (!htc_battery_initial)    return;
+
 	wake_lock(&di->work_wake_lock);
 	queue_work(di->monitor_wqueue, &di->monitor_work);
 }

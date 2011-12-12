@@ -287,6 +287,7 @@ void htcleo_analog_init(void)
 int htcleo_get_rx_vol(uint8_t hw, int level)
 {
     int vol;
+    struct q6_hw_info *info;
 
     if (level > 100)
         level = 100;
@@ -294,7 +295,6 @@ int htcleo_get_rx_vol(uint8_t hw, int level)
         level = 0;
 
     // TODO: is it correct?
-    struct q6_hw_info *info;
     info = &q6_audio_hw[hw];
     vol = info->min_gain + ((info->max_gain - info->min_gain) * level) / 100;
 

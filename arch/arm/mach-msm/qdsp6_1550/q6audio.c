@@ -133,7 +133,7 @@ static struct audio_client * audio_test(void);
 static void callback(void *data, int len, void *cookie);
 static int audio_init(struct audio_client *ac);
 static int audio_info(struct audio_client *ac);
-static int q6audio_init_rx_volumes();
+static int q6audio_init_rx_volumes(void);
 
 static struct wake_lock wakelock;
 static struct wake_lock idlelock;
@@ -2027,7 +2027,7 @@ int q6audio_set_rx_volume(int level)
 }
 EXPORT_SYMBOL_GPL(q6audio_set_rx_volume);
 
-static int q6audio_init_rx_volumes()
+static int q6audio_init_rx_volumes(void)
 {
     int vol;
     struct q6_device_info *di = q6_audio_devices;
