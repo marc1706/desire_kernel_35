@@ -1126,8 +1126,8 @@ static int cpufreq_add_dev(struct sys_device *sys_dev)
 		dprintk("initialization failed\n");
 		goto err_unlock_policy;
 	}
-	policy->user_policy.min = policy->min;
-	policy->user_policy.max = policy->max;
+	policy->user_policy.min = CONFIG_MSM_CPU_FREQ_ONDEMAND_MIN;
+	policy->user_policy.max = CONFIG_MSM_CPU_FREQ_ONDEMAND_MAX;
 
 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
 				     CPUFREQ_START, policy);
