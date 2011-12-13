@@ -718,6 +718,24 @@ static ssize_t store_vdd_levels(struct cpufreq_policy *policy, const char *buf, 
 	return count;
 }
 
+extern unsigned int acpuclk_get_vdd_min(void);
+static ssize_t show_vdd_min(struct cpufreq_policy *policy, char *buf)
+{
+	return sprintf(buf, "%u\n", acpuclk_get_vdd_min());
+}
+
+extern unsigned int acpuclk_get_vdd_max(void);
+static ssize_t show_vdd_max(struct cpufreq_policy *policy, char *buf)
+{
+	return sprintf(buf, "%u\n", acpuclk_get_vdd_max());
+}
+
+extern unsigned int acpuclk_get_vdd_step(void);
+static ssize_t show_vdd_step(struct cpufreq_policy *policy, char *buf)
+{
+	return sprintf(buf, "%u\n", acpuclk_get_vdd_step());
+}
+
 #endif
 
 /**
@@ -751,6 +769,9 @@ cpufreq_freq_attr_rw(scaling_governor);
 cpufreq_freq_attr_rw(scaling_setspeed);
 #ifdef CONFIG_CPU_FREQ_VDD_LEVELS
 cpufreq_freq_attr_rw(vdd_levels);
+cpufreq_freq_attr_ro(vdd_min);
+cpufreq_freq_attr_ro(vdd_max);
+cpufreq_freq_attr_ro(vdd_step);
 #endif
 
 static struct attribute *default_attrs[] = {
@@ -767,6 +788,9 @@ static struct attribute *default_attrs[] = {
 	&scaling_setspeed.attr,
 #ifdef CONFIG_CPU_FREQ_VDD_LEVELS
 	&vdd_levels.attr,
+	&vdd_min.attr,
+	&vdd_max.attr,
+	&vdd_step.attr,
 #endif
 	NULL
 };
