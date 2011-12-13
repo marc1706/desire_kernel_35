@@ -758,6 +758,20 @@ config HTC_BATTCHG_SMEM
 	default n
 	bool "Read Battery Info via SMEM"
 
+config QSD_SVS
+	bool "QSD Static Voltage Scaling"
+	depends on (ARCH_MSM_SCORPION)
+	default y
+	help
+	  Enables static voltage scaling using the TPS65023 PMIC.
+
+config QSD_PMIC_DEFAULT_DCDC1
+	int "PMIC default output voltage"
+	depends on (ARCH_MSM_SCORPION)
+	default 1275
+	help
+	  This is the PMIC voltage at Linux kernel boot.
+
 config HTC_PWRSINK
 	depends on MSM_SMD
 	default y
@@ -1448,6 +1462,15 @@ config MSM_QDSP6
 	default n
 	help
 	  Enable support for qdsp6. This provides audio and video functionality.
+
+config MSM_CPU_AVS
+	bool "Enable Adaptive Voltage Scaling (AVS)"
+	depends on (ARCH_MSM_SCORPION && QSD_SVS)
+	default n
+	help
+	  This enables the Adaptive Voltage Scaling feature of
+	  Qualcomm ARMv7 CPUs. It adjusts the voltage for each frequency
+	  based on feedback from three ring oscillators in the CPU.
 
 config MSM8X60_AUDIO
 	tristate "MSM8X60 audio support"
