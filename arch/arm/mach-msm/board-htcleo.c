@@ -569,15 +569,26 @@ static int parse_tag_bdaddr(void)
 }
 /* end AOSP style interface */
 
-/* for (sense roms) */
+/*
+ * export unique BT mac address for Sense ROMs
+ * based on code by tytung
+ * by marc1706
+ */
 #define MAC_ADDRESS_SIZE_C	17
 static char bdaddress[MAC_ADDRESS_SIZE_C+1] = "";
 static void bt_export_bd_address(void)
 {
-	unsigned char cTemp[6];
+	uint32_t id1, id2, id3, sid1, sid2, sid3;
+	uint32_t id_base = 0xef260;
+
 	if (!is_valid_mac_address(bdaddress)){
-		memcpy(cTemp, get_bt_bd_ram(), 6);
-		sprintf(bdaddress, "%02x:%02x:%02x:%02x:%02x:%02x", cTemp[0], cTemp[1], cTemp[2], cTemp[3], cTemp[4], cTemp[5]);
+		id1 = readl(MSM_SHARED_RAM_BASE + id_base + 0x0);
+		id2 = readl(MSM_SHARED_RAM_BASE + id_base + 0x4);
+		id3 = readl(MSM_SHARED_RAM_BASE + id_base + 0x8);
+		sid1 = crc32(~0, &id1, 4);
+		sid2 = crc32(~0, &id2, 4);
+		sid3 = crc32(~0, &id3, 4);
+		sprintf(bdaddress, "00:23:76:%2X:%2X:%2X", sid3 % 0xff, sid2 % 0xff, sid1 % 0xff);
 		pr_info("BD_ADDRESS=%s\n", bdaddress);
 	}
 }
