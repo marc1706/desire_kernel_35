@@ -63,6 +63,7 @@
 #include <linux/kernel_stat.h>
 #include <linux/workqueue.h>
 #include <linux/slab.h>
+#include <linux/kthread.h>
 
 #ifdef CONFIG_CPU_FREQ_VDD_LEVELS
 #include "board-htcleo.h"
@@ -273,7 +274,7 @@ static short avs_get_target_voltage(int freq_idx, bool update_table)
 	vdd_table = avs_state.avs_v + temp_index;
 
 	AVSDEBUG("vdd_table[%d]=%d\n", freq_idx, vdd_table[freq_idx]);
-	if ((update_table) || (vdd_table[freq_idx]==VOLTAGE_MAX)) {
+	if (update_table) {
 	  avs_update_voltage_table(vdd_table);
 	}
 
@@ -365,52 +366,54 @@ aaf_out:
 }
 
 
-static struct delayed_work avs_work;
-static struct workqueue_struct  *kavs_wq;
+static struct task_struct  *kavs_task;
 #define AVS_DELAY ((CONFIG_HZ * 50 + 999) / 1000)
 
-static void do_avs_timer(struct work_struct *work)
+static int do_avs_timer(void *data)
 {
 	int cur_freq_idx;
 
-	mutex_lock(&avs_lock);
-	if (!avs_state.changing) {
-		/* Only adjust the voltage if clk is stable */
-		cur_freq_idx = avs_state.freq_idx;
-		avs_set_target_voltage(cur_freq_idx, 1);
+	while(1) {
+		if (kthread_should_stop())
+			break;
+
+		mutex_lock(&avs_lock);
+		if (!avs_state.changing) {
+			/* Only adjust the voltage if clk is stable */
+			cur_freq_idx = avs_state.freq_idx;
+			avs_set_target_voltage(cur_freq_idx, 1);
+		}
+		mutex_unlock(&avs_lock);
+
+		set_current_state(TASK_INTERRUPTIBLE);
+		schedule_timeout (AVS_DELAY);
 	}
-	mutex_unlock(&avs_lock);
-	queue_delayed_work_on(0, kavs_wq, &avs_work, AVS_DELAY);
-}
 
-
-static void __init avs_timer_init(void)
-{
-	INIT_DELAYED_WORK_DEFERRABLE(&avs_work, do_avs_timer);
-	queue_delayed_work_on(0, kavs_wq, &avs_work, AVS_DELAY);
-}
-
-static void __exit avs_timer_exit(void)
-{
-	cancel_delayed_work(&avs_work);
+	return 0;
 }
 
 static int __init avs_work_init(void)
 {
-	kavs_wq = create_workqueue("avs");
-	if (!kavs_wq) {
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+	kavs_task = kthread_run(do_avs_timer, NULL,
+				   "avs");
+
+	if (IS_ERR(kavs_task)) {
 		printk(KERN_ERR "AVS initialization failed\n");
 		return -EFAULT;
 	}
-	avs_timer_init();
+	printk(KERN_ERR "AVS initialization success\n");
+
+	sched_setscheduler_nocheck(kavs_task, SCHED_RR, &param);
+	get_task_struct(kavs_task);
 
 	return 1;
 }
 
 static void __exit avs_work_exit(void)
 {
-	avs_timer_exit();
-	destroy_workqueue(kavs_wq);
+	kthread_stop(kavs_task);
+	put_task_struct(kavs_task);
 }
 
 int __init avs_init(int (*set_vdd)(int), u32 freq_cnt, u32 freq_idx)
