@@ -33,13 +33,13 @@
 //#define VOLTAGE_MIN  800 /* mV */
 //#define VOLTAGE_MAX  1300
 
-#include "board-bravo.h"
+#include "board-htcleo.h"
 
 #define	USE_OVERCLOCKING 1
 //#define	USE_EXTREMEOVERCLOCKING	1
 
-#define VOLTAGE_MIN  BRAVO_TPS65023_MIN_UV_MV /* mV */
-#define VOLTAGE_MAX  BRAVO_TPS65023_MAX_UV_MV
+#define VOLTAGE_MIN  HTCLEO_TPS65023_MIN_UV_MV /* mV */
+#define VOLTAGE_MAX  HTCLEO_TPS65023_MAX_UV_MV
 #define	VOLTAGE_MIN_START	900	// Minimum value to start off with
 #define VOLTAGE_STEP 25
 
