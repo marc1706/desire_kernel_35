@@ -40,7 +40,7 @@
 
 #define VOLTAGE_MIN  HTCLEO_TPS65023_MIN_UV_MV /* mV */
 #define VOLTAGE_MAX  HTCLEO_TPS65023_MAX_UV_MV
-#define	VOLTAGE_MIN_START	900	// Minimum value to start off with
+#define	VOLTAGE_MIN_START	950	// Minimum value to start off with
 #define VOLTAGE_STEP 25
 
 int __init avs_init(int (*set_vdd)(int), u32 freq_cnt, u32 freq_idx);
