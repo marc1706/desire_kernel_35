@@ -62,7 +62,6 @@ struct regulator {
 	int uA_load;
 	int min_uV;
 	int max_uV;
-	int enabled;
 	char *supply_name;
 	struct device_attribute dev_attr;
 	struct regulator_dev *rdev;
@@ -576,7 +575,7 @@ static int update_voltage(struct regulator *regulator, int min_uV, int max_uV)
 	int ret = 0;
 
 	list_for_each_entry(sibling, &rdev->consumer_list, list) {
-		if (regulator == sibling || !sibling->enabled)
+		if (regulator == sibling || (_regulator_is_enabled(sibling->rdev) <= 0))
 			continue;
 		if (max_uV < sibling->min_uV || min_uV > sibling->max_uV) {
 			printk(KERN_ERR "%s: requested voltage range [%d, %d] "
@@ -611,7 +610,7 @@ static int update_voltage_prev(struct regulator_dev *rdev)
 	struct regulator *consumer;
 
 	list_for_each_entry(consumer, &rdev->consumer_list, list) {
-		if (!consumer->enabled)
+		if (_regulator_is_enabled(consumer->rdev) <= 0)
 			continue;
 		if (consumer->max_uV < max_uV)
 			max_uV = consumer->max_uV;
@@ -1465,8 +1464,6 @@ int regulator_enable(struct regulator *regulator)
 	if (ret)
 		goto out;
 
-	regulator->enabled++;
-
 out:
 	mutex_unlock(&rdev->mutex);
 	return ret;
@@ -1540,8 +1537,6 @@ int regulator_disable(struct regulator *regulator)
 	ret = _regulator_disable(rdev);
 	if (ret)
 		goto out;
-
-	regulator->enabled--;
 
 	if (!regulator_check_voltage_update(rdev))
 		update_voltage_prev(rdev);
@@ -1751,11 +1746,9 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
 	if (min_uV == regulator->min_uV && max_uV == regulator->max_uV)
 		goto out;
 
-	if (regulator->enabled) {
-		ret = update_voltage(regulator, min_uV, max_uV);
-		if (ret)
-			goto out;
-	}
+	ret = update_voltage(regulator, min_uV, max_uV);
+	if (ret)
+		goto out;
 
 	regulator->min_uV = min_uV;
 	regulator->max_uV = max_uV;
