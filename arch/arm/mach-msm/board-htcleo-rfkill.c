@@ -181,7 +181,7 @@ static void config_bt_table(uint32_t *table, int len)
 	unsigned id;
 	for (n = 0; n < len; n++) {
 		id = table[n];
-		msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX, &id, 0);
+		msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX, &id, NULL);
 	}
 }
 

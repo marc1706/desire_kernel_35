@@ -54,6 +54,8 @@ static void *htcleo_wifi_mem_prealloc(int section, unsigned long size)
 	return wifi_mem_array[section].mem_ptr;
 }
 
+int __init htcleo_init_wifi_mem(void);
+
 int __init htcleo_init_wifi_mem(void)
 {
 	int i;

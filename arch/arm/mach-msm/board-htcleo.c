@@ -58,9 +58,9 @@
 #include <mach/htc_headset_gpio.h>
 
 #include <mach/board-htcleo-microp.h>
+#include <mach/board-htcleo-ts.h>
 
 #include "board-htcleo.h"
-#include "board-htcleo-ts.h"
 #include "devices.h"
 #include "proc_comm.h"
 #include "dex_comm.h"
@@ -168,8 +168,8 @@ static struct htc_headset_gpio_platform_data htc_headset_gpio_data = {
 	.hpin_gpio		= HTCLEO_GPIO_HDS_DET,
 	.mic_detect_gpio	= HTCLEO_GPIO_HDS_MIC,
 	.microp_channel		= 1,
-	.key_enable_gpio	= NULL,
-	.mic_select_gpio	= NULL,
+	.key_enable_gpio	= 0,
+	.mic_select_gpio	= 0,
 };
 
 static struct platform_device htc_headset_gpio = {
@@ -386,10 +386,9 @@ static uint32_t flashlight_gpio_table[] =
 	PCOM_GPIO_CFG(HTCLEO_GPIO_FLASHLIGHT_FLASH, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_2MA),
 };
 
-static int config_htcleo_flashlight_gpios(void)
+static void config_htcleo_flashlight_gpios(void)
 {
 	config_gpio_table(flashlight_gpio_table, ARRAY_SIZE(flashlight_gpio_table));
-	return 0;
 }
 
 static struct flashlight_platform_data htcleo_flashlight_data =
@@ -753,7 +752,7 @@ static int htcleo_kgsl_power(bool on)
 	int rail_id = 0;
 
     	cmd = on ? PCOM_CLK_REGIME_SEC_RAIL_ENABLE : PCOM_CLK_REGIME_SEC_RAIL_DISABLE;
-    	return msm_proc_comm(cmd, &rail_id, 0);
+    	return msm_proc_comm(cmd, &rail_id, NULL);
 }
 
 static struct platform_device msm_kgsl_device =

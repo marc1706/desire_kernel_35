@@ -72,6 +72,7 @@ static unsigned char *hardcoded_nvs =
 #include <asm/setup.h>
 
 static struct proc_dir_entry *wifi_calibration;
+unsigned char *get_wifi_nvs_ram(void);
 
 unsigned char *get_wifi_nvs_ram( void )
 {
@@ -101,6 +102,8 @@ static unsigned wifi_get_nvs_size( void )
 	len = strlen(hardcoded_nvs)+NVS_MACADDR_SIZE;
 	return len;
 }
+
+int wifi_calibration_size_set(void);
 
 int wifi_calibration_size_set(void)
 {

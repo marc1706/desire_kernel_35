@@ -757,7 +757,7 @@ static int __init micropklt_dbg_init(void)
 {
 	struct dentry *dent;
 
-	dent = debugfs_create_dir("micropklt", 0);
+	dent = debugfs_create_dir("micropklt", NULL);
 	if (IS_ERR(dent))
 		return PTR_ERR(dent);
 

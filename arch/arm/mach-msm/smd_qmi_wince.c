@@ -498,7 +498,7 @@ static void qmi_read_work(struct work_struct *ws)
             break;
         if (sz > QMI_MAX_PACKET)
         {
-            smd_read(ctrl_ch, 0, sz);
+            smd_read(ctrl_ch, NULL, sz);
             continue;
         }
         if (smd_read(ctrl_ch, buf, sz) != sz) 
@@ -855,7 +855,7 @@ static int qmi_open(struct inode *ip, struct file *fp)
 
     mutex_lock(&ctxt->lock);
 
-    if (ctrl_ch == 0)
+    if (ctrl_ch == NULL)
     {
         DBG("first open\n");
         r = smd_open("SMD_CONTROL", &ctrl_ch, ctxt, qmi_notify);		 
@@ -925,7 +925,7 @@ static struct qmi_ctxt *qmi_minor_to_ctxt(unsigned n)
         return &qmi_device1;
     if (n == qmi_device2.misc.minor)
         return &qmi_device2;
-    return 0;
+    return NULL;
 }
 
 static int __init qmi_init(void)
@@ -933,7 +933,7 @@ static int __init qmi_init(void)
     int ret;
 
     qmi_wq = create_singlethread_workqueue("qmi");
-    if (qmi_wq == 0)
+    if (qmi_wq == NULL)
         return -ENOMEM;
 
     wake_lock_init(&wakelock, WAKE_LOCK_SUSPEND, "qmi");

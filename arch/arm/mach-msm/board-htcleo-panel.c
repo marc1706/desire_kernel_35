@@ -1712,7 +1712,7 @@ int __init htcleo_init_panel(void)
 	if (!machine_is_htcleo())
 		return 0;
 
-	vreg_lcd = vreg_get(0, "gp4");
+	vreg_lcd = vreg_get(NULL, "gp4");
 	if (IS_ERR(vreg_lcd))
 	{
 	    return PTR_ERR(vreg_lcd);

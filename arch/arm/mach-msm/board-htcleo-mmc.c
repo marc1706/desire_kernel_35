@@ -30,6 +30,7 @@
 
 #include <mach/vreg.h>
 #include <mach/gpio.h>
+#include <mach/board-htcleo-mmc.h>
 
 #include "board-htcleo.h"
 #include "devices.h"
@@ -38,7 +39,6 @@
 
 #undef HTCLEO_DEBUG_MMC
 
-static bool opt_disable_sdcard;
 static int __init htcleo_disablesdcard_setup(char *str)
 {
 	opt_disable_sdcard = (bool)simple_strtol(str, NULL, 0);
@@ -189,8 +189,6 @@ static struct embedded_sdio_data htcleo_wifi_emb_data = {
 };
 
 static int htcleo_wifi_cd = 0; /* WIFI virtual 'card detect' status */
-static void (*wifi_status_cb)(int card_present, void *dev_id);
-static void *wifi_status_cb_devid;
 
 static int htcleo_wifi_status_register(
 			void (*callback)(int card_present, void *dev_id),
@@ -231,8 +229,6 @@ int htcleo_wifi_set_carddetect(int val)
 	return 0;
 }
 
-static int htcleo_wifi_power_state;
-
 int htcleo_wifi_power(int on)
 {
 	printk("%s: %d\n", __func__, on);
@@ -255,8 +251,6 @@ int htcleo_wifi_power(int on)
 	return 0;
 }
 
-static int htcleo_wifi_reset_state;
-
 int htcleo_wifi_reset(int on)
 {
 	printk("%s: do nothing\n", __func__);
@@ -275,7 +269,7 @@ int __init htcleo_init_mmc(unsigned debug_uart)
 
 	/* initial WIFI_SHUTDOWN# */	
 	id = PCOM_GPIO_CFG(HTCLEO_GPIO_WIFI_SHUTDOWN_N, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_2MA),
-	msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX, &id, 0);
+	msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX, &id, NULL);
 	gpio_set_value(HTCLEO_GPIO_WIFI_SHUTDOWN_N, 0);
 
 	msm_add_sdcc(1, &htcleo_wifi_data, 0, 0);
@@ -291,13 +285,13 @@ int __init htcleo_init_mmc(unsigned debug_uart)
 
 	sdslot_vreg_enabled = 0;
 
-	sdslot_vreg = vreg_get(0, "gp6");
+	sdslot_vreg = vreg_get(NULL, "gp6");
 	if (IS_ERR(sdslot_vreg))
 		return PTR_ERR(sdslot_vreg);
 //	wlan_vreg_1 = PM_VREG_WLAN_ID;
 //	wlan_vreg_2 = PM_VREG_MSME1_ID;
 
-	wlan_vreg_3 = vreg_get(0, "rftx");
+	wlan_vreg_3 = vreg_get(NULL, "rftx");
 	if (IS_ERR(wlan_vreg_3))
 		return PTR_ERR(wlan_vreg_3);
 
