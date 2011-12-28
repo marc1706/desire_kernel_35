@@ -1316,6 +1316,7 @@ static int __init clock_late_init(void)
 	//pr_info("reset imem_config\n");
 	return 0;
 }
+late_initcall(clock_late_init);
 
 struct clk_ops clk_ops_pcom = {
 	.enable = pc_clk_enable,
@@ -1330,5 +1331,3 @@ struct clk_ops clk_ops_pcom = {
 	.is_enabled = pc_clk_is_enabled,
 //	.round_rate = pc_clk_round_rate,
 };
-
-late_initcall(clock_late_init);
