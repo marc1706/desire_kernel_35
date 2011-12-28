@@ -56,6 +56,11 @@ static inline u32 avs_test_delays(void)
 { return 0; }
 #endif
 
+#if defined(CONFIG_CPU_FREQ_VDD_LEVELS) && defined(CONFIG_MSM_CPU_AVS)
+ssize_t acpuclk_get_vdd_levels_havs_str(char *buf);
+void acpuclk_set_vdd_havs(unsigned acpu_khz, int min_vdd, int max_vdd);
+#endif
+
 #ifdef CONFIG_MSM_AVS_HW
 u32 avs_reset_delays(u32 avsdscr);
 u32 avs_get_avscsr(void);

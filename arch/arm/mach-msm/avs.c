@@ -433,7 +433,7 @@ int __init avs_init(int (*set_vdd)(int), u32 freq_cnt, u32 freq_idx)
 	avs_state.avs_v = kmalloc(TEMPRS * avs_state.freq_cnt *
 		sizeof(avs_state.avs_v[0]), GFP_KERNEL);
 
-	if (avs_state.avs_v == 0)
+	if (avs_state.avs_v == NULL)
 		return -ENOMEM;
 
 	for (i = 0; i < TEMPRS*avs_state.freq_cnt; i++)
@@ -453,7 +453,7 @@ int __init avs_init(int (*set_vdd)(int), u32 freq_cnt, u32 freq_idx)
 	return 0;
 }
 
-void __exit avs_exit()
+void __exit avs_exit(void)
 {
 	avs_work_exit();
 
