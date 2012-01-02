@@ -9,20 +9,15 @@ fi;
 #packageprep
 if [ ! -e $CMP ];
 then
-	mkdir $CMP $CPM/modules;
+	mkdir $CMP $CMP/modules;
 fi;
 
 #packaging
-cp ./currentrelease.txt $CMP/
 cp ./arch/arm/boot/zImage $CMP/
 cp ./drivers/net/wireless/bcm4329/bcm4329.ko $CMP/modules/
+cp ./drivers/staging/zram/zram.ko $CMP/modules/
 cp ./fs/cifs/cifs.ko $CMP/modules/
-cp ./fs/fuse/fuse.ko $CMP/modules/
-cp ./fs/lockd/lockd.ko $CMP/modules/
-cp ./fs/nfs/nfs.ko $CMP/modules/
-cp ./fs/nfs_common/nfs_acl.ko $CMP/modules/
-cp ./fs/nfsd/nfsd.ko $CMP/modules/
-cp ./fs/nls/nls_utf8.ko $CMP/modules/
-cp ./net/ipv6/*.ko $CMP/modules/
-cp ./net/sunrpc/auth_gss/*.ko $CMP/modules/
-cp ./net/sunrpc/*.ko $CMP/modules/
+cp ./lib/lzo/lzo_compress.ko $CMP/modules/
+cp ./lib/lzo/lzo_decompress.ko $CMP/modules/
+cp ./sound/htcleo/alsa-mix-htc-leo.ko $CMP/modules/
+cp ./sound/htcleo/alsa-pcm-htc-leo.ko $CMP/modules/
