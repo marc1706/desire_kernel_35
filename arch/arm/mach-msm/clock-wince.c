@@ -31,7 +31,7 @@
 
 //#define ENABLE_CLOCK_INFO   1
 
-extern struct clk msm_clocks_8x50[];
+extern struct clk msm_clocks[];
 
 static DEFINE_MUTEX(clocks_mutex);
 static DEFINE_SPINLOCK(clocks_lock);
@@ -1203,7 +1203,7 @@ void __init msm_clock_init(void)
 
 	spin_lock_init(&clocks_lock);
 	mutex_lock(&clocks_mutex);
-	for (clk = msm_clocks_8x50; clk && clk->name; clk++) {
+	for (clk = msm_clocks; clk && clk->name; clk++) {
 		list_add_tail(&clk->list, &clocks);
 	}
 	mutex_unlock(&clocks_mutex);

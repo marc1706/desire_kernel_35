@@ -7,9 +7,8 @@ obj-y += timer.o
 endif
 
 ifndef CONFIG_ARCH_MSM8X60
-obj-y += irq.o pmic.o vreg.o dex_comm.o
-obj-y += devices.o
-obj-$(CONFIG_ARCH_QSD8X50) += devices-qsd8x50.o
+obj-y += irq.o devices.o pmic.o vreg.o
+obj-y += dex_comm.o
 endif
 obj-y += pwrtest.o
 obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
