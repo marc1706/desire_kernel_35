@@ -50,9 +50,9 @@ static uint16_t g_usModuleVersion;	/*0: rev.4, 1: rev.5 */
 #define GROUPED_PARAMETER_HOLD        0x01
 #define GROUPED_PARAMETER_UPDATE      0x00
 
-/* Greenish in low light */ 
-#define REG_MASK_CORRUPTED_FRAMES     0x0105 
-#define MASK                          0x01 
+/* Greenish in low light */
+#define REG_MASK_CORRUPTED_FRAMES     0x0105
+#define MASK                          0x01
 #define NO_MASK                       0x00
 
 /* PLL Registers */
@@ -189,7 +189,7 @@ struct s5k3e2fx_i2c_reg_conf Init_setting_evt4[] = {
 /*EVT4 */
 	 {REG_PRE_PLL_CLK_DIV, 0x06},	/* PLL setting */
 	 {REG_PLL_MULTIPLIER_MSB, 0x00},
-	 {REG_PLL_MULTIPLIER_LSB, 0x83},
+	 {REG_PLL_MULTIPLIER_LSB, REG_PLL_MULTIPLIER_LSB_VALUE},
 	 {REG_VT_PIX_CLK_DIV, 0x08},
 	 {REG_VT_SYS_CLK_DIV, 0x01},
 	 {REG_OP_PIX_CLK_DIV, 0x08},
