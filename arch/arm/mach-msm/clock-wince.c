@@ -72,7 +72,7 @@ struct msm_clock_params
 	char	*name;
 };
 
-static int max_clk_rate[P_NR_CLKS], min_clk_rate[P_NR_CLKS];
+static int max_clk_rate[NR_CLKS], min_clk_rate[NR_CLKS];
 
 #define GLBL_CLK_ENA           ((uint32_t)MSM_CLK_CTL_BASE)
 #define GLBL_CLK_ENA_2         ((uint32_t)MSM_CLK_CTL_BASE + 0x220)
@@ -133,66 +133,66 @@ static unsigned int idx2pll(uint32_t idx)
 }
 static struct msm_clock_params msm_clock_parameters[] = {
 	// Full ena/md/ns clock
-	{ .clk_id = P_SDC1_CLK, .glbl = GLBL_CLK_ENA, .idx =  7, .offset = 0xa4, .name="SDC1_CLK",},
-	{ .clk_id = P_SDC2_CLK, .glbl = GLBL_CLK_ENA, .idx =  8, .offset = 0xac, .name="SDC2_CLK",},
+	{ .clk_id = SDC1_CLK, .glbl = GLBL_CLK_ENA, .idx =  7, .offset = 0xa4, .name="SDC1_CLK",},
+	{ .clk_id = SDC2_CLK, .glbl = GLBL_CLK_ENA, .idx =  8, .offset = 0xac, .name="SDC2_CLK",},
 #if defined(CONFIG_ARCH_QSD8X50)
-	{ .clk_id = P_SDC3_CLK, .glbl = GLBL_CLK_ENA, .idx = 27, .offset = 0x3d8, .name="SDC3_CLK",},
-	{ .clk_id = P_SDC4_CLK, .glbl = GLBL_CLK_ENA, .idx = 28, .offset = 0x3e0, .name="SDC4_CLK",},
+	{ .clk_id = SDC3_CLK, .glbl = GLBL_CLK_ENA, .idx = 27, .offset = 0x3d8, .name="SDC3_CLK",},
+	{ .clk_id = SDC4_CLK, .glbl = GLBL_CLK_ENA, .idx = 28, .offset = 0x3e0, .name="SDC4_CLK",},
 #else
-	{ .clk_id = P_SDC3_CLK, .glbl = GLBL_CLK_ENA, .idx = 27, .offset = 0xb4, .name="SDC3_CLK",},
-	{ .clk_id = P_SDC4_CLK, .glbl = GLBL_CLK_ENA, .idx = 28, .offset = 0xbc, .name="SDC4_CLK",},
+	{ .clk_id = SDC3_CLK, .glbl = GLBL_CLK_ENA, .idx = 27, .offset = 0xb4, .name="SDC3_CLK",},
+	{ .clk_id = SDC4_CLK, .glbl = GLBL_CLK_ENA, .idx = 28, .offset = 0xbc, .name="SDC4_CLK",},
 #endif
 #if defined(CONFIG_ARCH_QSD8X50)
-	{ .clk_id = P_UART1DM_CLK, .glbl = GLBL_CLK_ENA, .idx = 17, .offset = 0x124, .name="UART1DM_CLK",},
-	{ .clk_id = P_UART2DM_CLK, .glbl = GLBL_CLK_ENA, .idx = 26, .offset = 0x12c, .name="UART2DM_CLK",},
-	{ .clk_id = P_USB_HS_CLK, .glbl = GLBL_CLK_ENA_2, .idx = 7, .offset = 0x3e8, .ns_only = 0xb41, .name="USB_HS_CLK",},
+	{ .clk_id = UART1DM_CLK, .glbl = GLBL_CLK_ENA, .idx = 17, .offset = 0x124, .name="UART1DM_CLK",},
+	{ .clk_id = UART2DM_CLK, .glbl = GLBL_CLK_ENA, .idx = 26, .offset = 0x12c, .name="UART2DM_CLK",},
+	{ .clk_id = USB_HS_CLK, .glbl = GLBL_CLK_ENA_2, .idx = 7, .offset = 0x3e8, .ns_only = 0xb41, .name="USB_HS_CLK",},
 #else
-	{ .clk_id = P_UART1DM_CLK, .glbl = GLBL_CLK_ENA, .idx = 17, .offset = 0xd4, .name="UART1DM_CLK",},
-	{ .clk_id = P_UART2DM_CLK, .glbl = GLBL_CLK_ENA, .idx = 26, .offset = 0xdc, .name="UART2DM_CLK",},
-	{ .clk_id = P_USB_HS_CLK, .glbl = GLBL_CLK_ENA, .idx = 25, .offset = 0x2c0, .ns_only = 0xb00, .name="USB_HS_CLK",},
+	{ .clk_id = UART1DM_CLK, .glbl = GLBL_CLK_ENA, .idx = 17, .offset = 0xd4, .name="UART1DM_CLK",},
+	{ .clk_id = UART2DM_CLK, .glbl = GLBL_CLK_ENA, .idx = 26, .offset = 0xdc, .name="UART2DM_CLK",},
+	{ .clk_id = USB_HS_CLK, .glbl = GLBL_CLK_ENA, .idx = 25, .offset = 0x2c0, .ns_only = 0xb00, .name="USB_HS_CLK",},
 #endif
 	// these both enable the GRP and IMEM clocks.
-	{ .clk_id = P_GRP_3D_CLK, .glbl = GLBL_CLK_ENA, .idx = 3, .offset = 0x84, .ns_only = 0xa80, .name="GRP_CLK", }, 
-	{ .clk_id = P_IMEM_CLK, .glbl = GLBL_CLK_ENA, .idx = 3, .offset = 0x84, .ns_only = 0xa80, .name="IMEM_CLK", },
+	{ .clk_id = GRP_CLK, .glbl = GLBL_CLK_ENA, .idx = 3, .offset = 0x84, .ns_only = 0xa80, .name="GRP_CLK", }, 
+	{ .clk_id = IMEM_CLK, .glbl = GLBL_CLK_ENA, .idx = 3, .offset = 0x84, .ns_only = 0xa80, .name="IMEM_CLK", },
 
 
 	// MD/NS only; offset = Ns reg
 #if defined(CONFIG_ARCH_QSD8X50)
-	{ .clk_id = P_VFE_CLK, .glbl = GLBL_CLK_ENA, .idx = 2, .offset = 0x40, .name="VFE_CLK", },
+	{ .clk_id = VFE_CLK, .glbl = GLBL_CLK_ENA, .idx = 2, .offset = 0x40, .name="VFE_CLK", },
 #else
-	{ .clk_id = P_VFE_CLK, .offset = 0x44, .name="VFE_CLK", },
+	{ .clk_id = VFE_CLK, .offset = 0x44, .name="VFE_CLK", },
 #endif
 	
 	// Enable bit only; bit = 1U << idx
-	{ .clk_id = P_MDP_CLK, .glbl = GLBL_CLK_ENA, .idx = 9, .name="MDP_CLK",},
+	{ .clk_id = MDP_CLK, .glbl = GLBL_CLK_ENA, .idx = 9, .name="MDP_CLK",},
 	
 	// NS-reg only; offset = Ns reg, ns_only = Ns value
 #if defined(CONFIG_ARCH_QSD8X50)
-	{ .clk_id = P_GP_CLK, .glbl = GLBL_CLK_ENA, .offset = 0x58, .ns_only = 0x800, .name="GP_CLK" },
+	{ .clk_id = GP_CLK, .glbl = GLBL_CLK_ENA, .offset = 0x58, .ns_only = 0x800, .name="GP_CLK" },
 #else
-	{ .clk_id = P_GP_CLK, .offset = 0x5c, .ns_only = 0xa06, .name="GP_CLK" },
+	{ .clk_id = GP_CLK, .offset = 0x5c, .ns_only = 0xa06, .name="GP_CLK" },
 #endif
 
 #if defined(CONFIG_ARCH_QSD8X50)
-	{ .clk_id = P_PMDH_CLK, .glbl = GLBL_CLK_ENA_2, .idx = 4, .offset = 0x8c, .ns_only = 0x00c, .name="PMDH_CLK"},
+	{ .clk_id = PMDH_CLK, .glbl = GLBL_CLK_ENA_2, .idx = 4, .offset = 0x8c, .ns_only = 0x00c, .name="PMDH_CLK"},
 #else
-	{ .clk_id = P_PMDH_CLK, .offset = 0x8c, .ns_only = 0xa0c, .name="PMDH_CLK"},
+	{ .clk_id = PMDH_CLK, .offset = 0x8c, .ns_only = 0xa0c, .name="PMDH_CLK"},
 #endif
 
 #if defined(CONFIG_ARCH_QSD8X50)
-	{ .clk_id = P_I2C_CLK, .offset = 0x64, .ns_only = 0xa00, .name="I2C_CLK"},
+	{ .clk_id = I2C_CLK, .offset = 0x64, .ns_only = 0xa00, .name="I2C_CLK"},
 #else
-	{ .clk_id = P_I2C_CLK, .offset = 0x68, .ns_only = 0xa00, .name="I2C_CLK"},
+	{ .clk_id = I2C_CLK, .offset = 0x68, .ns_only = 0xa00, .name="I2C_CLK"},
 #endif
 
 #if defined(CONFIG_ARCH_QSD8X50)
-	{ .clk_id = P_SPI_CLK, .glbl = GLBL_CLK_ENA_2, .idx = 13, .offset = 0x14c, .ns_only = 0xa08, .name="SPI_CLK"},
+	{ .clk_id = SPI_CLK, .glbl = GLBL_CLK_ENA_2, .idx = 13, .offset = 0x14c, .ns_only = 0xa08, .name="SPI_CLK"},
 #endif
 
 #if defined(CONFIG_ARCH_QSD8X50)
-//	{ .clk_id = P_UART1_CLK, .offset = 0xc0, .ns_only = 0xa00, .name="UART1_CLK"},
+//	{ .clk_id = UART1_CLK, .offset = 0xc0, .ns_only = 0xa00, .name="UART1_CLK"},
 #else
-//	{ .clk_id = P_UART1_CLK, .offset = 0xe0, .ns_only = 0xa00, .name="UART1_CLK"},
+//	{ .clk_id = UART1_CLK, .offset = 0xe0, .ns_only = 0xa00, .name="UART1_CLK"},
 #endif
 };
 
@@ -443,7 +443,7 @@ static int new_clk_set_rate(uint32_t id, unsigned long rate)
     unsigned speed = 0;
     switch (id)
     {
-    case P_ICODEC_RX_CLK:
+    case ICODEC_RX_CLK:
         if (rate > 11289600)     speed = 9;
         else if (rate > 8192000) speed = 8;
         else if (rate > 6144000) speed = 7;
@@ -455,7 +455,7 @@ static int new_clk_set_rate(uint32_t id, unsigned long rate)
         else speed = 1;
         clk = 50;
         break;
-    case P_ICODEC_TX_CLK:
+    case ICODEC_TX_CLK:
         if (rate > 11289600) speed = 9;
         else if (rate > 8192000) speed = 8;
         else if (rate > 6144000) speed = 7;
@@ -467,13 +467,13 @@ static int new_clk_set_rate(uint32_t id, unsigned long rate)
         else speed = 1;
         clk = 52;
         break;
-    case P_ECODEC_CLK:
+    case ECODEC_CLK:
         if (rate > 2048000) speed = 3;
         else if (rate > 128000) speed = 2;
         else speed = 1;
         clk = 42;
         break;   
-    case P_SDAC_M_CLK:
+    case SDAC_MCLK:
         if (rate > 1411200) speed = 9;
         else if (rate > 1024000) speed = 8;
         else if (rate > 768000) speed = 7;
@@ -486,7 +486,7 @@ static int new_clk_set_rate(uint32_t id, unsigned long rate)
         clk = 64;
         break;
 
-    case P_UART1DM_CLK:
+    case UART1DM_CLK:
         if (rate > 61440000) speed = 15;
         else if (rate > 58982400) speed = 14;
         else if (rate > 56000000) speed = 13;
@@ -504,7 +504,7 @@ static int new_clk_set_rate(uint32_t id, unsigned long rate)
         else speed = 1;
         clk = 78;
         break;
-    case P_UART2DM_CLK:
+    case UART2DM_CLK:
         if (rate > 61440000) speed = 15;
         else if (rate > 58982400) speed = 14;
         else if (rate > 56000000) speed = 13;
@@ -524,7 +524,7 @@ static int new_clk_set_rate(uint32_t id, unsigned long rate)
         break;
 
 
-    case P_VFE_MDC_CLK:
+    case VFE_MDC_CLK:
         if (rate == 96000000) speed = 37;
         else if (rate == 48000000) speed = 32;
         else if (rate == 24000000) speed = 22;
@@ -539,7 +539,7 @@ static int new_clk_set_rate(uint32_t id, unsigned long rate)
         clk = 40;
         break;
 
-    case P_VFE_CLK:
+    case VFE_CLK:
         if (rate == 36000000) speed = 1;
         else if (rate == 48000000) speed = 2;
         else if (rate == 64000000) speed = 3;
@@ -553,7 +553,7 @@ static int new_clk_set_rate(uint32_t id, unsigned long rate)
         clk = 41;
         break;
 
-	case P_SPI_CLK:
+	case SPI_CLK:
 		if (rate > 15360000) speed = 5;
 		else if (rate > 9600000) speed = 4;
 		else if (rate > 4800000) speed = 3;
@@ -566,7 +566,7 @@ static int new_clk_set_rate(uint32_t id, unsigned long rate)
 #define MHZ(x)  ((x) * 1000 * 1000)
 #define KHZ(x)  ((x) * 1000)
 
-    case P_SDC1_CLK:
+    case SDC1_CLK:
 		if (rate > MHZ(50)) speed = 14;
         else if (rate > KHZ(49152)) speed = 13;
         else if (rate > MHZ(45)) speed = 12;
@@ -583,7 +583,7 @@ static int new_clk_set_rate(uint32_t id, unsigned long rate)
         else speed = 1;
         clk = 66;
         break;
-    case P_SDC2_CLK:
+    case SDC2_CLK:
 		if (rate > MHZ(50)) speed = 14;
         else if (rate > KHZ(49152)) speed = 13;
         else if (rate > MHZ(45)) speed = 12;
@@ -605,8 +605,8 @@ static int new_clk_set_rate(uint32_t id, unsigned long rate)
 #undef KHZ
 
         // both none
-    case P_SDC1_P_CLK:
-    case P_SDC2_P_CLK:
+    case SDC1_PCLK:
+    case SDC2_PCLK:
         return 0;
         break;
 
@@ -626,66 +626,66 @@ static int new_clk_enable(uint32_t id)
     unsigned clk = -1;
     switch (id)
     {
-    case P_ICODEC_RX_CLK:
+    case ICODEC_RX_CLK:
         clk = 50;
         break;
-    case P_ICODEC_TX_CLK:
+    case ICODEC_TX_CLK:
         clk = 52;
         break;
-    case P_ECODEC_CLK:
+    case ECODEC_CLK:
         clk = 42;
         break;   
-    case P_SDAC_M_CLK:
+    case SDAC_MCLK:
         clk = 64;
         break;
-    case P_IMEM_CLK:
+    case IMEM_CLK:
         clk = 55;
         break;
-    case P_GRP_3D_CLK:
+    case GRP_CLK:
         clk = 56;
         break;
-    case P_ADM_CLK:
+    case ADM_CLK:
         clk = 19;
         break;
 
-    case P_UART1DM_CLK:
+    case UART1DM_CLK:
         clk = 78;
         break;
-    case P_UART2DM_CLK:
+    case UART2DM_CLK:
         clk = 80;
         break;
 
-    case P_VFE_AXI_CLK:
+    case VFE_AXI_CLK:
         clk = 24;
         break;
-    case P_VFE_MDC_CLK:
+    case VFE_MDC_CLK:
         clk = 40;
         break;
-    case P_VFE_CLK:
+    case VFE_CLK:
         clk = 41;
         break;
-    case P_MDC_CLK:
+    case MDC_CLK:
         clk = 53; // ??
         break;
 
-    case P_SPI_CLK:
-	clk = 95;
-	break;
+	case SPI_CLK:
+		clk = 95;
+		break;
 
-    case P_MDP_CLK:
+    case MDP_CLK:
         clk = 9;
         break;
 
-    case P_SDC1_CLK:
+    case SDC1_CLK:
         clk = 66;
         break;
-    case P_SDC2_CLK:
+    case SDC2_CLK:
         clk = 67;
         break;
-    case P_SDC1_P_CLK:
+    case SDC1_PCLK:
         clk = 17;
         break;
-    case P_SDC2_P_CLK:
+    case SDC2_PCLK:
         clk = 16;
         break;
 
@@ -705,66 +705,66 @@ static int new_clk_disable(uint32_t id)
     unsigned clk = -1;
     switch (id)
     {
-    case P_ICODEC_RX_CLK:
+    case ICODEC_RX_CLK:
         clk = 50;
         break;
-    case P_ICODEC_TX_CLK:
+    case ICODEC_TX_CLK:
         clk = 52;
         break;
-    case P_ECODEC_CLK:
+    case ECODEC_CLK:
         clk = 42;
         break;   
-    case P_SDAC_M_CLK:
+    case SDAC_MCLK:
         clk = 64;
         break;
-    case P_IMEM_CLK:
+    case IMEM_CLK:
         clk = 55;
         break;
-    case P_GRP_3D_CLK:
+    case GRP_CLK:
         clk = 56;
         break;
-    case P_ADM_CLK:
+    case ADM_CLK:
         clk = 19;
         break;
 
-    case P_UART1DM_CLK:
+    case UART1DM_CLK:
         clk = 78;
         break;
-    case P_UART2DM_CLK:
+    case UART2DM_CLK:
         clk = 80;
         break;
 
-    case P_VFE_AXI_CLK:
+    case VFE_AXI_CLK:
         clk = 24;
         break;
-    case P_VFE_MDC_CLK:
+    case VFE_MDC_CLK:
         clk = 40;
         break;
-    case P_VFE_CLK:
+    case VFE_CLK:
         clk = 41;
         break;
-    case P_MDC_CLK:
+    case MDC_CLK:
         clk = 53; // WTF??
         break;
 
-    case P_SPI_CLK:
+    case SPI_CLK:
         clk = 95;
         break;
 
-    case P_MDP_CLK:
+    case MDP_CLK:
         clk = 9;
         break;
 
-    case P_SDC1_CLK:
+    case SDC1_CLK:
         clk = 66;
         break;
-    case P_SDC2_CLK:
+    case SDC2_CLK:
         clk = 67;
         break;
-    case P_SDC1_P_CLK:
+    case SDC1_PCLK:
         clk = 17;
         break;
-    case P_SDC2_P_CLK:
+    case SDC2_PCLK:
         clk = 16;
         break;
 
@@ -785,66 +785,66 @@ static long new_clk_get_rate(uint32_t id)
     unsigned rate;
     switch (id)
     {
-    case P_ICODEC_RX_CLK:
+    case ICODEC_RX_CLK:
         clk = 50;
         break;
-    case P_ICODEC_TX_CLK:
+    case ICODEC_TX_CLK:
         clk = 52;
         break;
-    case P_ECODEC_CLK:
+    case ECODEC_CLK:
         clk = 42;
         break;
-    case P_SDAC_M_CLK:
+    case SDAC_MCLK:
         clk = 64;
         break;
-    case P_IMEM_CLK:
+    case IMEM_CLK:
         clk = 55;
         break;
-    case P_GRP_3D_CLK:
+    case GRP_CLK:
         clk = 56;
         break;
-    case P_ADM_CLK:
+    case ADM_CLK:
         clk = 19;
         break;
 
-    case P_UART1DM_CLK:
+    case UART1DM_CLK:
         clk = 78;
         break;
-    case P_UART2DM_CLK:
+    case UART2DM_CLK:
         clk = 80;
         break;
 
-    case P_VFE_AXI_CLK:
+    case VFE_AXI_CLK:
         clk = 24;
         break;
-    case P_VFE_MDC_CLK:
+    case VFE_MDC_CLK:
         clk = 40;
         break;
-    case P_VFE_CLK:
+    case VFE_CLK:
         clk = 41;
         break;
-    case P_MDC_CLK:
+    case MDC_CLK:
         clk = 53; // ??
         break;
 
-    case P_SPI_CLK:
+    case SPI_CLK:
         clk = 95;
         break;
 
-    case P_MDP_CLK:
+    case MDP_CLK:
         clk = 9;
         break;
 
-    case P_SDC1_CLK:
+    case SDC1_CLK:
         clk = 66;
         break;
-    case P_SDC2_CLK:
+    case SDC2_CLK:
         clk = 67;
         break;
-    case P_SDC1_P_CLK:
+    case SDC1_PCLK:
         clk = 17;
         break;
-    case P_SDC2_P_CLK:
+    case SDC2_PCLK:
         clk = 16;
         break;
 
@@ -858,7 +858,7 @@ static long new_clk_get_rate(uint32_t id)
 
 static int new_clk_set_flags(uint32_t id, unsigned long flags)
 {    
-    if (id == P_VFE_CLK)
+    if (id == VFE_CLK)
     {        
         // INTERNAL 0x00000100 << 1        
         if (flags == (0x00000100 << 1))
@@ -899,7 +899,7 @@ static int pc_clk_enable(uint32_t id)
 
 	//XXX: too spammy, extreme debugging only: D(KERN_DEBUG "%s: %d\n", __func__, id);
 	
-	if ( id == P_IMEM_CLK || id == P_GRP_3D_CLK )
+	if ( id == IMEM_CLK || id == GRP_CLK )
 	{
 		set_grp_clk( 1 );
 		writel(readl(params.glbl) | (1U << params.idx), params.glbl);
@@ -933,7 +933,7 @@ static void pc_clk_disable(uint32_t id)
 
 	//XXX: D(KERN_DEBUG "%s: %d\n", __func__, id);
 	
-	if ( id == P_IMEM_CLK || id == P_GRP_3D_CLK )
+	if ( id == IMEM_CLK || id == GRP_CLK )
 	{
 		set_grp_clk( 1 );
 		writel(readl(params.glbl) & ~(1U << params.idx), params.glbl);
@@ -972,20 +972,20 @@ static int pc_clk_set_rate(uint32_t id, unsigned long rate)
 
 static int pc_clk_set_min_rate(uint32_t id, unsigned long rate)
 {
-	if (id < P_NR_CLKS)
+	if (id < NR_CLKS)
 	 min_clk_rate[id]=rate;
 	else if(debug_mask&DEBUG_UNKNOWN_ID)
-	 printk(KERN_WARNING " FIXME! clk_set_min_rate not implemented; %u:%lu NR_CLKS=%d\n", id, rate, P_NR_CLKS);
+	 printk(KERN_WARNING " FIXME! clk_set_min_rate not implemented; %u:%lu NR_CLKS=%d\n", id, rate, NR_CLKS);
 
 	return 0;
 }
 
 static int pc_clk_set_max_rate(uint32_t id, unsigned long rate)
 {
-	if (id < P_NR_CLKS)
+	if (id < NR_CLKS)
 	 max_clk_rate[id]=rate;
 	else if(debug_mask&DEBUG_UNKNOWN_ID)
-	 printk(KERN_WARNING " FIXME! clk_set_min_rate not implemented; %u:%lu NR_CLKS=%d\n", id, rate, P_NR_CLKS);
+	 printk(KERN_WARNING " FIXME! clk_set_min_rate not implemented; %u:%lu NR_CLKS=%d\n", id, rate, NR_CLKS);
 
 	return 0;
 }
@@ -999,24 +999,24 @@ static unsigned long pc_clk_get_rate(uint32_t id)
 	if(rate == 0) {
 		switch (id) {
 		/* known MD/NS clocks, MSM_CLK dump and arm/mach-msm/clock-7x30.c */
-		case P_SDC1_CLK:
-		case P_SDC2_CLK:
-		case P_SDC3_CLK:
-		case P_SDC4_CLK:
-		case P_UART1DM_CLK:
-		case P_UART2DM_CLK:
-		case P_USB_HS_CLK:
-		case P_SDAC_CLK:
-		case P_TV_DAC_CLK:
-		case P_TV_ENC_CLK:
-		case P_USB_OTG_CLK:
+		case SDC1_CLK:
+		case SDC2_CLK:
+		case SDC3_CLK:
+		case SDC4_CLK:
+		case UART1DM_CLK:
+		case UART2DM_CLK:
+		case USB_HS_CLK:
+		case SDAC_CLK:
+		case TV_DAC_CLK:
+		case TV_ENC_CLK:
+		case USB_OTG_CLK:
 			rate = get_mdns_host_clock(id);
 			break;
 
-		case P_SDC1_P_CLK:
-		case P_SDC2_P_CLK:
-		case P_SDC3_P_CLK:
-		case P_SDC4_P_CLK:
+		case SDC1_PCLK:
+		case SDC2_PCLK:
+		case SDC3_PCLK:
+		case SDC4_PCLK:
 			rate = 64000000; /* g1 value */
 			break;
 
@@ -1055,7 +1055,7 @@ static int pc_clk_is_enabled(uint32_t id)
 		is_enabled = (readl(glbl) & bit) != 0;
 	}
 	//XXX: is this necessary?
-	if (id==P_SDC1_P_CLK || id==P_SDC2_P_CLK || id==P_SDC3_P_CLK || id==P_SDC4_P_CLK)
+	if (id==SDC1_PCLK || id==SDC2_PCLK || id==SDC3_PCLK || id==SDC4_PCLK)
 		is_enabled = 1;
 	return is_enabled;
 }
@@ -1100,7 +1100,7 @@ EXPORT_SYMBOL(clk_put);
 int clk_enable(struct clk *clk)
 {
 	unsigned long flags;
-	if (clk->id == P_ACPU_CLK)
+	if (clk->id == ACPU_CLK)
 	{
 		return -ENOTSUPP;
 	}
@@ -1157,19 +1157,19 @@ EXPORT_SYMBOL(clk_get_rate);
 int clk_set_rate(struct clk *clk, unsigned long rate)
 {
 	int ret;
-	if (clk->flags & CLKFLAG_MAX) {
+	if (clk->flags & CLKFLAG_USE_MAX_TO_SET) {
 		ret = pc_clk_set_max_rate(clk->id, rate);
 		if (ret)
 			return ret;
 	}
-	if (clk->flags & CLKFLAG_MIN) {
+	if (clk->flags & CLKFLAG_USE_MIN_TO_SET) {
 		ret = pc_clk_set_min_rate(clk->id, rate);
 		if (ret)
 			return ret;
 	}
 
-	if (clk->flags & CLKFLAG_MAX ||
-		clk->flags & CLKFLAG_MIN)
+	if (clk->flags & CLKFLAG_USE_MAX_TO_SET ||
+		clk->flags & CLKFLAG_USE_MIN_TO_SET)
 		return ret;
 
 	return pc_clk_set_rate(clk->id, rate);
@@ -1300,7 +1300,7 @@ static int __init clock_late_init(void)
 	list_for_each_entry(clk, &clocks, list) {
 		if (clk->flags & CLKFLAG_AUTO_OFF) {
 			spin_lock_irqsave(&clocks_lock, flags);
-			if (!clk->count && clk->id != P_MDP_CLK) {
+			if (!clk->count && clk->id != MDP_CLK) {
 				count++;
 				pc_clk_disable(clk->id);
 			}
