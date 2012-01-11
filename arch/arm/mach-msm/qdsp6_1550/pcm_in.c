@@ -14,6 +14,7 @@
  *
  */
 
+#include <linux/slab.h>
 #include <linux/fs.h>
 #include <linux/module.h>
 #include <linux/miscdevice.h>
@@ -29,11 +30,7 @@
 #define BUFSZ (256)
 
 #ifdef CONFIG_QSD_AUDIO_CALLREC
-struct msm_voicerec_mode {
-	uint32_t rec_mode;
-};
 
-#define AUDIO_SET_INCALL _IOW(AUDIO_IOCTL_MAGIC, 19, struct msm_voicerec_mode)
 #define AUDIO_FLAG_INCALL_MIXED       2
 
 struct pcm {
