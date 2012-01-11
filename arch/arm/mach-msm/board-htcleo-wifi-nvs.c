@@ -28,8 +28,11 @@
 #include <linux/crc32.h>
 #include <linux/io.h>
 
+#include "board-htcleo.h"
+
 #define NVS_MAX_SIZE		0x800U
 #define NVS_MACADDR_SIZE	0x1AU
+#define WLAN_SKB_BUF_NUM	16
 
 static struct proc_dir_entry *wifi_calibration;
 static unsigned char nvs_mac_addr[NVS_MACADDR_SIZE];
@@ -90,8 +93,23 @@ static int parse_tag_msm_wifi(void)
 	sid1 = crc32(~0, &id1, 4);
 	sid2 = crc32(~0, &id2, 4);
 	sid3 = crc32(~0, &id3, 4);
-	sprintf(nvs_mac_addr, "macaddr=00:90:4c:%2x:%2x:%2x\n", sid1 % 0xff, sid2 % 0xff, sid3 % 0xff);
+	sprintf(nvs_mac_addr, "macaddr=00:23:76:%2x:%2x:%2x\n", sid1 % 0xff, sid2 % 0xff, sid3 % 0xff);
 	pr_info("Device Wifi Mac Address: %s\n", nvs_mac_addr);
+	return 0;
+}
+
+static int parse_tag_msm_wifi_from_spl(void)
+{
+	uint32_t id1, id2, id3, id4, id5, id6;
+	uint32_t id_base = 0xFC028; //real mac offset found in spl for haret.exe on WM
+	id1 = readl(MSM_SPLHOOD_BASE + id_base + 0x0);
+	id2 = readl(MSM_SPLHOOD_BASE + id_base + 0x1);
+	id3 = readl(MSM_SPLHOOD_BASE + id_base + 0x2);
+	id4 = readl(MSM_SPLHOOD_BASE + id_base + 0x3);
+	id5 = readl(MSM_SPLHOOD_BASE + id_base + 0x4);
+	id6 = readl(MSM_SPLHOOD_BASE + id_base + 0x5);
+	sprintf(nvs_mac_addr, "macaddr=%2x:%2x:%2x:%2x:%2x:%2x\n", id1 & 0xff, id2 & 0xff, id3 & 0xff, id4 & 0xff, id5 & 0xff, id6 & 0xff);
+	pr_info("Device Real Wifi Mac Address: %s\n", nvs_mac_addr);
 	return 0;
 }
 
@@ -137,7 +155,11 @@ static int wifi_calibration_read_proc(char *page, char **start, off_t off,
 static int __init wifi_nvs_init(void)
 {
 	pr_info("%s\n", __func__);
-	parse_tag_msm_wifi();
+	if (htcleo_is_nand_boot()) {
+		parse_tag_msm_wifi();
+	} else {
+		parse_tag_msm_wifi_from_spl();
+	}
 	wifi_calibration = create_proc_entry("calibration", 0444, NULL);
 	if (wifi_calibration != NULL) {
 		wifi_calibration->size = wifi_get_nvs_size();
