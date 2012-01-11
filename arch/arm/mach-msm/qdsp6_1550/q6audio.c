@@ -38,6 +38,7 @@
 #include <mach/msm_audio_qcp.h>
 
 #include <linux/gpio.h>
+#include <linux/msm_audio_aac.h>
 
 #include "q6audio_devices.h"
 #include "../dex_comm.h"
@@ -701,12 +702,20 @@ static int audio_mp3_open(struct audio_client *ac, uint32_t bufsz,
     return ac->open_status;
 }
 
-static int audio_aac_open(struct audio_client *ac, uint32_t bufsz, void *data)
+/*
+ * ported code for audio_aac_open from Code Aurora in order to work
+ * with new aac code from Code Aurora
+ * by marc1706
+ */
+static int audio_aac_open(struct audio_client *ac, uint32_t bufsz,
+			  uint32_t sample_rate, uint32_t channels,
+			  uint32_t bit_rate, uint32_t flags,
+					uint32_t stream_format)
 {
     int r;
-    struct aac_format *af = data;
+    int audio_object_type;
     struct adsp_open_command rpc;
-    uint32_t *aac_type;
+    u32 *aac_type = NULL;
     int idx = 0;  // sizeof(uint32_t);
     struct adsp_audio_binary_format *fmt = (struct adsp_audio_binary_format *)params_data;
     union adsp_audio_format *ptr;
@@ -725,77 +734,33 @@ static int audio_aac_open(struct audio_client *ac, uint32_t bufsz, void *data)
     rpc.pblock = params_phys;
 
     aac_type = (uint32_t *)(fmt->data);
-    switch (af->block_formats) 
+    switch (stream_format) 
     {
-    case 0xffff:
-        if (ac->flags & AUDIO_FLAG_WRITE)
-            *aac_type = ADSP_AUDIO_AAC_ADTS;
-        else
-            *aac_type = ADSP_AUDIO_AAC_MPEG4_ADTS;
-        break;
-    case 0:
-        if (ac->flags & AUDIO_FLAG_WRITE)
-            *aac_type = ADSP_AUDIO_AAC_ADIF;
-        else
-            *aac_type = ADSP_AUDIO_AAC_RAW;
-        break;
-    case 1:
-        *aac_type = ADSP_AUDIO_AAC_RAW;
-        break;
-    case 2:
-        *aac_type = ADSP_AUDIO_AAC_LOAS;
-        break;
-    case 3:
-        *aac_type = ADSP_AUDIO_AAC_FRAMED_RAW;
-        break;
-    case 4:
-        *aac_type = ADSP_AUDIO_AAC_RAW;
-        break;
+    case AUDIO_AAC_FORMAT_ADTS:
+        /* AAC Encoder expect MPEG4_ADTS media type */
+	*aac_type = ADSP_AUDIO_AAC_MPEG4_ADTS;
+    break;
+    case AUDIO_AAC_FORMAT_RAW:
+	    /* for ADIF recording */
+	    *aac_type = ADSP_AUDIO_AAC_RAW;
+    break;
     default:
-        pr_err("unsupported AAC type %d\n", af->block_formats);
+        pr_err("unsupported AAC type %d\n", stream_format);
         mutex_unlock(&open_mem_lock);
         return -EINVAL;
     }
+    
+    /* AAC OBJECT LC */
+    audio_object_type = 2;
 
     AUDIO_INFO("aac_open: type %x, obj %d, idx %d\n",
-          *aac_type, af->audio_object_type, idx);
-    fmt->data[idx++] = (u8)(((af->audio_object_type & 0x1F) << 3) |
-                ((af->sample_rate >> 1) & 0x7));
-    fmt->data[idx] = (u8)(((af->sample_rate & 0x1) << 7) |
-                ((af->channel_config & 0x7) << 3));
+          *aac_type, audio_object_type, idx);
 
-    switch (af->audio_object_type) {
-    case AAC_OBJECT_ER_LC:
-    case AAC_OBJECT_ER_LTP:
-    case AAC_OBJECT_ER_LD:
-        /* extension flag */
-        fmt->data[idx++] |= 0x1;
-        fmt->data[idx] = (u8)(
-            ((af->aac_section_data_resilience_flag & 0x1) << 7) |
-            ((af->aac_scalefactor_data_resilience_flag & 0x1) << 6) |
-            ((af->aac_spectral_data_resilience_flag & 0x1) << 5) |
-            ((af->ep_config & 0x3) << 2));
-        break;
+    fmt->data[idx++] = (u8)(((audio_object_type & 0x1F) << 3) |
+                ((sample_rate >> 1) & 0x7));
+    fmt->data[idx] = (u8)(((sample_rate & 0x1) << 7) |
+                ((channels & 0x7) << 3));
 
-    case AAC_OBJECT_ER_SCALABLE:
-        fmt->data[idx++] |= 0x1;
-        /* extension flag */
-        fmt->data[idx++] = (u8)(
-            ((af->aac_section_data_resilience_flag & 0x1) << 4) |
-            ((af->aac_scalefactor_data_resilience_flag & 0x1) << 3) |
-            ((af->aac_spectral_data_resilience_flag & 0x1) << 2) |
-            ((af->ep_config >> 1) & 0x1));
-        fmt->data[idx] = (u8)((af->ep_config & 0x1) << 7);
-        break;
-
-    case AAC_OBJECT_BSAC:
-        fmt->data[++idx] = (u8)((af->ep_config & 0x3) << 6);
-        break;
-
-    default:
-        pr_err("dbg unknown object type \n");
-        break;
-    }
 //    fmt->num_bytes = idx + 1;
     rpc.blocklen = idx + 1;
 
@@ -803,8 +768,8 @@ static int audio_aac_open(struct audio_client *ac, uint32_t bufsz, void *data)
           fmt->data[0], fmt->data[1], fmt->data[2], fmt->data[3],
           fmt->data[4], fmt->data[5], fmt->data[6], fmt->data[7]);
 
-    rpc.config.aac.bit_rate = af->bit_rate;
-    if (ac->flags & AUDIO_FLAG_WRITE) 
+    rpc.config.aac.bit_rate = bit_rate;
+    if (flags & AUDIO_FLAG_WRITE) 
     {
         rpc.opcode = ADSP_AUDIO_OPCODE_OPEN_WRITE;
         rpc.stream_context = ADSP_AUDIO_DEVICE_CONTEXT_PLAYBACK;
@@ -815,25 +780,13 @@ static int audio_aac_open(struct audio_client *ac, uint32_t bufsz, void *data)
         rpc.stream_context = ADSP_AUDIO_DEVICE_CONTEXT_RECORD;
     }
 
-    if ((af->sbr_on_flag == 0) && (af->sbr_ps_on_flag == 0)) 
-    {
-        rpc.config.aac.encoder_mode = ADSP_AUDIO_ENC_AAC_LC_ONLY_MODE;
-    } 
-    else if ((af->sbr_on_flag == 1) && (af->sbr_ps_on_flag == 0)) 
-    {
-        rpc.config.aac.encoder_mode = ADSP_AUDIO_ENC_AAC_PLUS_MODE;
-    } 
-    else if ((af->sbr_on_flag == 1) && (af->sbr_ps_on_flag == 1)) 
-    {
-        rpc.config.aac.encoder_mode = ADSP_AUDIO_ENC_ENHANCED_AAC_PLUS_MODE;
-    } 
-    else 
-    {
-        pr_err("unsupported SBR flag\n");
-        mutex_unlock(&open_mem_lock);
-        return -EINVAL;
-    }
-    rpc.buf_max_size = bufsz; /* XXX ??? */
+    /*
+     * Always use ADSP_AUDIO_ENC_AAC_LC_ONLY_MODE as encoder_mode
+     * from Code Aurora
+     * by marc1706
+     */
+    rpc.config.aac.encoder_mode = ADSP_AUDIO_ENC_AAC_LC_ONLY_MODE;
+    rpc.buf_max_size = bufsz;
 
     TRACE("aac_open: opcode %x, stream_context 0x%x, "
           "mode %d, bytes %d, bbuffer size %d\n",
@@ -2654,14 +2607,19 @@ int q6audio_async(struct audio_client *ac)
 }
 
 
-
-struct audio_client *q6audio_open_aac(uint32_t bufsz, uint32_t rate,
-                      uint32_t flags, void *data, uint32_t acdb_id)
+/*
+ * ported code for q6audio_open_aac from Code Aurora
+ * by marc1706
+ */
+struct audio_client *q6audio_open_aac(uint32_t bufsz, uint32_t samplerate,
+					uint32_t channels, uint32_t bitrate,
+					uint32_t stream_format, uint32_t flags,
+					uint32_t acdb_id)
 {
     struct audio_client *ac;
 
     AUDIO_INFO("%s\n", __func__);
-    TRACE("q6audio_open_aac flags=%d rate=%d\n", flags, rate);
+    TRACE("q6audio_open_aac flags=%d samplerate=%d, channels = %d\n", flags, samplerate, channels);
 
     if (q6audio_init())
         return 0;
@@ -2674,12 +2632,13 @@ struct audio_client *q6audio_open_aac(uint32_t bufsz, uint32_t rate,
     if (ac->flags & AUDIO_FLAG_WRITE)
         audio_rx_path_enable(1, acdb_id);
     else {
-        /* TODO: consider concourrency with voice call */
-        tx_clk_freq = rate;
+        if (!audio_tx_path_refcount)
+			tx_clk_freq = 48000;
         audio_tx_path_enable(1, acdb_id);
     }
 
-    audio_aac_open(ac, bufsz, data);
+    audio_aac_open(ac, bufsz, samplerate, channels, bitrate, flags,
+							stream_format);
     audio_command(ac, ADSP_AUDIO_IOCTL_CMD_SESSION_START);
 
     if (!(ac->flags & AUDIO_FLAG_WRITE)) {

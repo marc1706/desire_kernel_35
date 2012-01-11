@@ -19,12 +19,14 @@
 
 #define AUDIO_FLAG_READ		0
 #define AUDIO_FLAG_WRITE	1
+#define AUDIO_FLAG_INCALL_MIXED	2
 
 struct audio_buffer {
 	dma_addr_t phys;
 	void *data;
 	uint32_t size;
 	uint32_t used;	/* 1 = CPU is waiting for DSP to consume this buf */
+	uint32_t actual_size; /* actual number of bytes read by DSP */
 };
 
 struct audio_client {
@@ -79,8 +81,10 @@ struct audio_client *q6audio_open_mp3(uint32_t bufsz, uint32_t rate,
 
 struct audio_client *q6fm_open(void);
 
-struct audio_client *q6audio_open_aac(uint32_t bufsz, uint32_t rate,
-				      uint32_t flags, void *data, uint32_t acdb_id);
+struct audio_client *q6audio_open_aac(uint32_t bufsz, uint32_t samplerate,
+					uint32_t channels, uint32_t bitrate,
+					uint32_t stream_format, uint32_t flags,
+					uint32_t acdb_id);
 
 struct audio_client *q6audio_open_qcelp(uint32_t bufsz, uint32_t rate,
 				      void *data, uint32_t acdb_id);
