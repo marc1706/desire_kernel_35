@@ -75,9 +75,11 @@ static void gpio_enable(struct timed_output_dev *dev, int value)
 		container_of(dev, struct timed_gpio_data, dev);
 	unsigned long	flags;
 	int rc;
-
+/*
+* stop spamming dmesg -- marc1706
 	printk(KERN_INFO "%s(parent:%s): vibrates %d msec\n",
 		current->comm, current->parent->comm, value);
+*/
 	spin_lock_irqsave(&data->lock, flags);
 
 	/* cancel previous timer and set GPIO according to value */

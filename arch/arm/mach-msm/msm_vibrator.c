@@ -85,8 +85,11 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 	spin_lock_irqsave(&vibe_lock, flags);
 	hrtimer_cancel(&vibe_timer);
 
+	/*
+	* stop spamming the dmesg log -- marc1706
 	VIB_INFO_LOG(" %s(parent:%s): vibrates %d msec\n",
 			current->comm, current->parent->comm, value);
+	*/
 	if (value == 0)
 		vibe_state = 0;
 	else {
