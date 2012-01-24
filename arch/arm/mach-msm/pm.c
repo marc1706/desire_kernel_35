@@ -1085,7 +1085,7 @@ static void axi_early_suspend(struct early_suspend *handler)
 
 static void axi_late_resume(struct early_suspend *handler)
 {
-	axi_rate = 128000000;
+	axi_rate = 96000000;
 	sleep_axi_rate = 61000000;
 	clk_set_rate(axi_clk, axi_rate);
 }
@@ -1107,7 +1107,7 @@ static void __init msm_pm_axi_init(void)
 		pr_err("clk_get(ebi1_clk) returned %d\n", result);
 		return;
 	}
-	axi_rate = 128000000;
+	axi_rate = 96000000;
 	sleep_axi_rate = 61000000;
 	clk_set_rate(axi_clk, axi_rate);
 	register_early_suspend(&axi_screen_suspend);
