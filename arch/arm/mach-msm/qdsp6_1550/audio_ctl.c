@@ -133,8 +133,7 @@ static int q6_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static int q6_ioctl(struct inode *inode, struct file *file,
-		    unsigned int cmd, unsigned long arg)
+static long q6_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int rc;
 	uint32_t n;
@@ -234,7 +233,7 @@ static int q6_release(struct inode *inode, struct file *file)
 static struct file_operations q6_dev_fops = {
 	.owner		= THIS_MODULE,
 	.open		= q6_open,
-	.ioctl		= q6_ioctl,
+	.unlocked_ioctl    = q6_ioctl,
 	.release	= q6_release,
 };
 
