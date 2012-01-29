@@ -117,8 +117,21 @@ struct clkctl_acpu_speed acpu_freq_tbl[] = {
 	{ 1036800, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1B, 0, 1275, 128000 },
 	{ 1075200, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1C, 0, 1275, 128000 },
 	{ 1113600, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1D, 0, 1275, 128000 },
-        { 1152000, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1E, 0, 1300, 128000 },
-	{ 1190400, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1F, 0, 1325, 128000 },
+        { 1152000, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1D, 0, 1300, 128000 },
+	{ 1190400, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1D, 0, 1325, 128000 },
+	/* 
+	 * 0x1F is usually the end of the freq table
+	 * just set higher frequencies to the same sc_l_value
+	 */
+	{ 1228800, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1D, 0, 1325, 128000 },
+	{ 1267200, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1E, 0, 1325, 128000 },
+	{ 1305600, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1E, 0, 1325, 128000 },
+	{ 1344000, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1E, 0, 1325, 128000 },
+	{ 1382400, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1E, 0, 1325, 128000 },
+	{ 1420800, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1F, 0, 1350, 128000 },
+	{ 1459200, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1F, 0, 1350, 128000 },
+	{ 1497600, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1F, 0, 1350, 128000 },
+	{ 1536000, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1F, 0, 1350, 128000 },
 	{ 0 },
 };
 static unsigned long max_axi_rate;
@@ -506,7 +519,7 @@ void __init acpu_freq_tbl_fixup(void)
 		max_acpu_khz = 998400;
 		break;
 	case 0x10:
-		max_acpu_khz = 1190400;
+		max_acpu_khz = 1536000;
 		break;
 	default:
 		pr_warning("Invalid efuse data (%x) on Max ACPU freq!\n",
