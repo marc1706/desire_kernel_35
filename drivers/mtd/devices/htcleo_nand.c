@@ -2046,6 +2046,16 @@ struct msm_nand_info {
 	struct msm_nand_chip	msm_nand;
 };
 
+#ifdef CONFIG_MTD_PARTITIONS
+const struct mtd_partition mac_nand_partition_info[] = {
+	[0]{
+		.name	= "mac",
+		.offset	= 0x03f20000,
+		.size	= 0x00020000,
+	},
+};
+#endif
+
 static int __devinit msm_nand_probe(struct platform_device *pdev)
 {
 	struct msm_nand_info *info;
@@ -2105,8 +2115,10 @@ static int __devinit msm_nand_probe(struct platform_device *pdev)
 	err = parse_mtd_partitions(&info->mtd, part_probes, &info->parts, 0);
 	if (err > 0)
 		add_mtd_partitions(&info->mtd, info->parts, err);
-	else if (err <= 0 && pdata && pdata->parts)
+	else if (err <= 0 && pdata && pdata->parts) {
 		add_mtd_partitions(&info->mtd, pdata->parts, pdata->nr_parts);
+		add_mtd_partitions(&info->mtd, mac_nand_partition_info, 1);
+	}
 	else
 #endif
 		err = add_mtd_device(&info->mtd);
