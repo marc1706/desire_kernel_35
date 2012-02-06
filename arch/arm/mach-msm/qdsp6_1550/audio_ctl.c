@@ -146,28 +146,40 @@ static long q6_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case AUDIO_SWITCH_DEVICE:
 		rc = copy_from_user(&id, (void *)arg, sizeof(id));
 		AUDIO_INFO("SWITCH DEVICE %d, acdb %d\n", id[0], id[1]);
-		if (!rc)
+		if (rc) {
+			pr_err("%s: bad user address\n", __func__);
+			rc = -EFAULT;
+		} else
 			rc = q6audio_do_routing(id[0], id[1]);
 		break;
 	case AUDIO_SET_VOLUME:
 		rc = copy_from_user(&n, (void *)arg, sizeof(n));
-		if (!rc)
+		if (rc) {
+			pr_err("%s: bad user address\n", __func__);
+			rc = -EFAULT;
+		} else
 			rc = q6audio_set_rx_volume(n);
 		break;
 	case AUDIO_SET_MUTE:
 		rc = copy_from_user(&n, (void *)arg, sizeof(n));
-		if (!rc)
+		if (rc) {
+			pr_err("%s: bad user address\n", __func__);
+			rc = -EFAULT;
+		} else
 			rc = q6audio_set_tx_mute(n);
 		break;
 	case AUDIO_UPDATE_ACDB:
 		rc = copy_from_user(&id, (void *)arg, sizeof(id));
-		if (!rc)
+		if (rc) {
+			pr_err("%s: bad user address\n", __func__);
+			rc = -EFAULT;
+		} else
 			rc = q6audio_update_acdb(id[0], id[1]);
 		break;
 	case AUDIO_START_VOICE:
-		if (arg == 0) {
+		if (arg == 0)
 			id[0] = id[1] = 0;
-		} else if (copy_from_user(&id, (void*) arg, sizeof(id))) {
+		else if (copy_from_user(&id, (void*) arg, sizeof(id))) {
 			pr_info("voice: copy acdb_id from user failed\n");
 			rc = -EFAULT;
 			break;
@@ -189,7 +201,10 @@ static long q6_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	case AUDIO_REINIT_ACDB:
 		rc = copy_from_user(&filename, (void *)arg, sizeof(filename));
-		if (!rc)
+		if (rc) {
+			pr_err("%s: bad user address\n", __func__);
+			rc = -EFAULT;
+		} else
 			rc = q6audio_reinit_acdb(filename);
 		break;
 	case AUDIO_ENABLE_AUXPGA_LOOPBACK: {
