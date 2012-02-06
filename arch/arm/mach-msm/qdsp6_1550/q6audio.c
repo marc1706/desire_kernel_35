@@ -2089,7 +2089,6 @@ EXPORT_SYMBOL_GPL(q6audio_set_tx_volume);
 int q6audio_set_tx_mute(int mute)
 {
     uint32_t adev;
-    int rc;
 
     AUDIO_INFO("%s mute= %d\n", __func__, mute);
     if (q6audio_init())
@@ -2104,7 +2103,7 @@ int q6audio_set_tx_mute(int mute)
     }
 
     adev = audio_tx_device_id;
-    rc = audio_tx_mute(ac_control, adev, mute);
+    audio_tx_mute(ac_control, adev, mute);
     tx_mute_status = mute;
     if (!mute)
         _update_audio_tx_volume(ac_control, audio_tx_device_id);
