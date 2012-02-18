@@ -22,3 +22,4 @@ cp ./lib/lzo/lzo_compress.ko $CMP/modules/
 cp ./lib/lzo/lzo_decompress.ko $CMP/modules/
 cp ./sound/htcleo/alsa-mix-htc-leo.ko $CMP/modules/
 cp ./sound/htcleo/alsa-pcm-htc-leo.ko $CMP/modules/
+cp ./drivers/net/msm_rmnet.ko $CMP/modules/
