@@ -464,3 +464,7 @@ static int __init rmnet_init(void)
 }
 
 module_init(rmnet_init);
+
+MODULE_DESCRIPTION("Virtual Ethernet Interface for MSM7K Networking");
+MODULE_AUTHOR("Brian Swetland <swetland@google.com>");
+MODULE_LICENSE("GPL");
