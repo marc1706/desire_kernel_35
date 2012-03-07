@@ -47,15 +47,19 @@
 
 #define HEADROOM_FOR_QOS    8
 
+/*
+ * channel names currently need to start with SMD_DATA
+ * by marc1706
+ */
 static const char *ch_name[8] = {
-	"DATA5",
-	"DATA6",
-	"DATA7",
-	"DATA8",
-	"DATA9",
-	"DATA12",
-	"DATA13",
-	"DATA14",
+	"SMD_DATA5",
+	"SMD_DATA6",
+	"SMD_DATA7",
+	"SMD_DATA8",
+	"SMD_DATA9",
+	"SMD_DATA12",
+	"SMD_DATA13",
+	"SMD_DATA14",
 };
 
 static struct completion *port_complete[8];
