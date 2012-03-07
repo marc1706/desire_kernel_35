@@ -479,7 +479,8 @@ static int rmnet_open(struct net_device *dev)
 
 	rc = __rmnet_open(dev);
 
-	netif_start_queue(dev);
+	if (rc == 0)
+		netif_start_queue(dev);
 
 	return rc;
 }
