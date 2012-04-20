@@ -2796,9 +2796,6 @@ static int s5k3e2fx_probe_init_lens_correction(
 			&lc_setting_evt5[0],
 			ARRAY_SIZE(lc_setting_evt5));
 
-    /* Solve EVT5 greenish in lowlight, prevent corrupted frame*/
-    s5k3e2fx_i2c_write_b(s5k3e2fx_client->addr, 0x0105,0x1);
-
 	/*20090811  separates the EVT4/EVT5 sensor init and LC setting end */
 	s5k3e2fx_i2c_write_b(s5k3e2fx_client->addr,
 			     S5K3E2FX_REG_MODE_SELECT,
