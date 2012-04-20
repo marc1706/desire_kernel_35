@@ -1,34 +1,28 @@
 /* Copyright (c) 2008-2009, Code Aurora Forum. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, and the entire permission notice in its entirety,
- *    including the disclaimer of warranties.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. The name of the author may not be used to endorse or promote
- *    products derived from this software without specific prior
- *    written permission.
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of Code Aurora nor
+ *       the names of its contributors may be used to endorse or promote
+ *       products derived from this software without specific prior written
+ *       permission.
  *
- * ALTERNATIVELY, this product may be distributed under the terms of
- * the GNU General Public License, version 2, in which case the provisions
- * of the GPL version 2 are required INSTEAD OF the BSD license.
- *
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ALL OF
- * WHICH ARE HEREBY DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
- * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
- * USE OF THIS SOFTWARE, EVEN IF NOT ADVISED OF THE POSSIBILITY OF SUCH
- * DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NON-INFRINGEMENT ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
 
@@ -122,52 +116,52 @@ enum venc_mem_region_enum {
 };
 
 struct venc_buf_type {
-	u32 region;
-	u32 phys;
-	u32 size;
+	unsigned int region;
+	unsigned int phys;
+	unsigned int size;
 	int offset;
 };
 
 struct venc_qp_range {
-	u32 min_qp;
-	u32 max_qp;
+	unsigned int min_qp;
+	unsigned int max_qp;
 };
 
 struct venc_frame_rate {
-	u32 frame_rate_num;
-	u32 frame_rate_den;
+	unsigned int frame_rate_num;
+	unsigned int frame_rate_den;
 };
 
 struct venc_slice_info {
-	u32 slice_mode;
-	u32 units_per_slice;
+	unsigned int slice_mode;
+	unsigned int units_per_slice;
 };
 
 struct venc_extra_data {
-	u32 slice_extra_data_flag;
-	u32 slice_client_data1;
-	u32 slice_client_data2;
-	u32 slice_client_data3;
-	u32 none_extra_data_flag;
-	u32 none_client_data1;
-	u32 none_client_data2;
-	u32 none_client_data3;
+	unsigned int slice_extra_data_flag;
+	unsigned int slice_client_data1;
+	unsigned int slice_client_data2;
+	unsigned int slice_client_data3;
+	unsigned int none_extra_data_flag;
+	unsigned int none_client_data1;
+	unsigned int none_client_data2;
+	unsigned int none_client_data3;
 };
 
 struct venc_common_config {
-	u32 standard;
-	u32 input_frame_height;
-	u32 input_frame_width;
-	u32 output_frame_height;
-	u32 output_frame_width;
-	u32 rotation_angle;
-	u32 intra_period;
-	u32 rate_control;
+	unsigned int standard;
+	unsigned int input_frame_height;
+	unsigned int input_frame_width;
+	unsigned int output_frame_height;
+	unsigned int output_frame_width;
+	unsigned int rotation_angle;
+	unsigned int intra_period;
+	unsigned int rate_control;
 	struct venc_frame_rate frame_rate;
-	u32 bitrate;
+	unsigned int bitrate;
 	struct venc_qp_range qp_range;
-	u32 iframe_qp;
-	u32 pframe_qp;
+	unsigned int iframe_qp;
+	unsigned int pframe_qp;
 	struct venc_slice_info slice_config;
 	struct venc_extra_data extra_data;
 };
@@ -181,46 +175,45 @@ struct venc_nonio_buf_config {
 };
 
 struct venc_mpeg4_config {
-	u32 profile;
-	u32 level;
-	u32 time_resolution;
-	u32 ac_prediction;
-	u32 hec_interval;
-	u32 data_partition;
-	u32 short_header;
-	u32 rvlc_enable;
+	unsigned int profile;
+	unsigned int level;
+	unsigned int time_resolution;
+	unsigned int ac_prediction;
+	unsigned int hec_interval;
+	unsigned int data_partition;
+	unsigned int short_header;
+	unsigned int rvlc_enable;
 };
 
 struct venc_h263_config {
-	u32 profile;
-	u32 level;
+	unsigned int profile;
+	unsigned int level;
 };
 
 struct venc_h264_config {
-	u32 profile;
-	u32 level;
-	u32 max_nal;
-	u32 idr_period;
+	unsigned int profile;
+	unsigned int level;
+	unsigned int max_nal;
+	unsigned int idr_period;
 };
 
 struct venc_pmem {
 	int src;
 	int fd;
-	u32 offset;
+	unsigned int offset;
 	void *virt;
 	void *phys;
-	u32 size;
+	unsigned int size;
 };
 
 struct venc_buffer {
 	unsigned char *ptr_buffer;
-	u32 size;
-	u32 len;
-	u32 offset;
+	unsigned int size;
+	unsigned int len;
+	unsigned int offset;
 	long long time_stamp;
-	u32 flags;
-	u32 client_data;
-
+	unsigned int flags;
+	unsigned int client_data;
 };
 
 struct venc_buffers {
@@ -231,7 +224,7 @@ struct venc_buffers {
 };
 
 struct venc_buffer_flush {
-	u32 flush_mode;
+	unsigned int flush_mode;
 };
 
 union venc_msg_data {
@@ -240,10 +233,10 @@ union venc_msg_data {
 };
 
 struct venc_msg {
-	u32 status_code;
-	u32 msg_code;
-	u32 msg_data_size;
+	unsigned int status_code;
+	unsigned int msg_code;
 	union venc_msg_data msg_data;
+	unsigned int msg_data_size;
 };
 
 union venc_codec_config {
