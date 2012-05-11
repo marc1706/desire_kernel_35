@@ -134,9 +134,6 @@
 #if defined(CONFIG_IFACE_STAT)
 #include <linux/iface_stat.h>
 #endif
-#if defined(CONFIG_NETFILTER_XT_MATCH_QTAGUID)
-#include <linux/netfilter/xt_qtaguid.h>
-#endif
 
 #include "net-sysfs.h"
 
@@ -4828,8 +4825,10 @@ static void rollback_registered_many(struct list_head *head)
 	synchronize_net();
 
 	list_for_each_entry(dev, head, unreg_list) {
+#if defined(CONFIG_IFACE_STAT)
 		/* Store stats for this device in persistent iface_stat */
 		iface_stat_update(dev);
+#endif
 
 		/* Shutdown queueing discipline. */
 		dev_shutdown(dev);

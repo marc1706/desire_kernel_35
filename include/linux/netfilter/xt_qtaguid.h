@@ -10,6 +10,4 @@
 #define XT_QTAGUID_SOCKET XT_OWNER_SOCKET
 #define xt_qtaguid_match_info xt_owner_match_info
 
-void iface_stat_update(struct net_device *dev);
-
 #endif /* _XT_QTAGUID_MATCH_H */
