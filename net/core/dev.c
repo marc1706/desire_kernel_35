@@ -131,7 +131,12 @@
 #include <linux/random.h>
 #include <trace/events/napi.h>
 #include <linux/pci.h>
+#if defined(CONFIG_IFACE_STAT)
 #include <linux/iface_stat.h>
+#endif
+#if defined(CONFIG_NETFILTER_XT_MATCH_QTAGUID)
+#include <linux/netfilter/xt_qtaguid.h>
+#endif
 
 #include "net-sysfs.h"
 
