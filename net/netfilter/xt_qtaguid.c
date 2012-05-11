@@ -8,7 +8,7 @@
  * published by the Free Software Foundation.
  */
 
-/* TODO: support ipv6 */
+/* TODO: support ipv6 for iface_stat */
 
 #include <linux/file.h>
 #include <linux/inetdevice.h>
@@ -20,8 +20,15 @@
 #include <net/sock.h>
 #include <net/tcp.h>
 #include <net/udp.h>
+#if defined(CONFIG_IP6_NF_IPTABLES) || defined(CONFIG_IP6_NF_IPTABLES_MODULE)
+#define XT_SOCKET_HAVE_IPV6 1
+#endif
 
 #include <linux/netfilter/xt_socket.h>
+/* We only use the xt_socket funcs within a similar context to avoid unexpected
+ * return values. */
+#define XT_SOCKET_SUPPORTED_HOOKS \
+	((1 << NF_INET_PRE_ROUTING) | (1 << NF_INET_LOCAL_IN))
 
 
 /*---------------------------------------------------------------------------*/
@@ -725,16 +732,41 @@ static struct sock *qtaguid_find_sk(const struct sk_buff *skb,
 				    struct xt_action_param *par)
 {
 	struct sock *sk;
+	unsigned int hook_mask = (1 << par->hooknum);
 
-	sk = xt_socket_get4_sk(skb, par);
-	/* TODO: is this fixed?
-	 * Seems to be issues on the file ptr for TCP+TIME_WAIT SKs.
+	pr_debug("xt_qtaguid: find_sk(skb=%p) hooknum=%d family=%d\n", skb,
+		 par->hooknum, par->family);
+
+	/* Let's not abuse the the xt_socket_get*_sk(), or else it will
+	 * return garbage SKs. */
+	if (!(hook_mask & XT_SOCKET_SUPPORTED_HOOKS))
+		return NULL;
+
+	switch (par->family) {
+#ifdef XT_SOCKET_HAVE_IPV6
+	case NFPROTO_IPV6:
+		sk = xt_socket_get6_sk(skb, par);
+		break;
+#endif
+	case NFPROTO_IPV4:
+		sk = xt_socket_get4_sk(skb, par);
+		break;
+	default:
+		return NULL;
+	}
+
+	/* Seems to be issues on the file ptr for TCP_TIME_WAIT SKs.
 	 * http://kerneltrap.org/mailarchive/linux-netdev/2010/10/21/6287959
+	 * Not fixed in 3.0-r3 :(
 	 */
-	if (sk)
+	if (sk) {
 		pr_debug("xt_qtaguid: %p->sk_proto=%u "
-			"->sk_state=%d\n", sk, sk->sk_protocol,
-			sk->sk_state);
+			 "->sk_state=%d\n", sk, sk->sk_protocol, sk->sk_state);
+		if (sk->sk_state  == TCP_TIME_WAIT) {
+			xt_socket_put_sk(sk);
+			sk = NULL;
+		}
+	}
 	return sk;
 }
 
@@ -784,8 +816,8 @@ static bool qtaguid_mt(const struct sk_buff *skb, struct xt_action_param *par)
 	struct sock *sk;
 	uid_t sock_uid;
 	bool res;
-	pr_debug("xt_qtaguid[%d]: entered skb=%p par->in=%p/out=%p\n",
-		par->hooknum, skb, par->in, par->out);
+	pr_debug("xt_qtaguid[%d]: entered skb=%p par->in=%p/out=%p fam=%d\n",
+		 par->hooknum, skb, par->in, par->out, par->family);
 	if (skb == NULL) {
 		res = (info->match ^ info->invert) == 0;
 		goto ret_res;
