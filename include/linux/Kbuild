@@ -391,3 +391,4 @@ unifdef-y += xfrm.h
 objhdr-y += version.h
 header-y += wimax.h
 header-y += wimax/
+header-y += genlock.h
