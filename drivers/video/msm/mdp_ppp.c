@@ -727,8 +727,8 @@ void put_img(struct file *p_src_file)
 	if (p_src_file)
 		put_pmem_file(p_src_file);
 #else
-    if (is_msm_hw3d_file(file))
-			put_msm_hw3d_file(file);
+    if (is_msm_hw3d_file(p_src_file))
+			put_msm_hw3d_file(p_src_file);
 #endif
 }
 
