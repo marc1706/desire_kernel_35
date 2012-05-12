@@ -34,6 +34,7 @@
 #include <linux/akm8973.h>
 #include <../../../drivers/staging/android/timed_gpio.h>
 #include <linux/ds2746_battery.h>
+#include <linux/msm_kgsl.h>
 
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
@@ -734,27 +735,7 @@ static struct platform_device qsd_device_spi = {
 // KGSL (HW3D support)#include <linux/android_pmem.h>
 ///////////////////////////////////////////////////////////////////////
 
-static struct resource msm_kgsl_resources[] =
-{
-	{
-		.name	= "kgsl_reg_memory",
-		.start	= MSM_GPU_REG_PHYS,
-		.end	= MSM_GPU_REG_PHYS + MSM_GPU_REG_SIZE - 1,
-		.flags	= IORESOURCE_MEM,
-	},
-	{
-		.name	= "kgsl_phys_memory",
-		.start	= MSM_GPU_PHYS_BASE,
-		.end	= MSM_GPU_PHYS_BASE + MSM_GPU_PHYS_SIZE - 1,
-		.flags	= IORESOURCE_MEM,
-	},
-	{
-		.start	= INT_GRAPHICS,
-		.end	= INT_GRAPHICS,
-		.flags	= IORESOURCE_IRQ,
-	},
-};
-
+#if 0
 static int htcleo_kgsl_power_rail_mode(int follow_clk)
 {
 	int mode = follow_clk ? 0 : 1;
@@ -770,14 +751,57 @@ static int htcleo_kgsl_power(bool on)
     	cmd = on ? PCOM_CLK_REGIME_SEC_RAIL_ENABLE : PCOM_CLK_REGIME_SEC_RAIL_DISABLE;
     	return msm_proc_comm(cmd, &rail_id, NULL);
 }
+#endif
 
-static struct platform_device msm_kgsl_device =
-{
-	.name		= "kgsl",
-	.id		= -1,
-	.resource	= msm_kgsl_resources,
-	.num_resources	= ARRAY_SIZE(msm_kgsl_resources),
+/* start kgsl */
+static struct resource kgsl_3d0_resources[] = {
+	{
+		.name  = KGSL_3D0_REG_MEMORY,
+		.start = 0xA0000000,
+		.end = 0xA001ffff,
+		.flags = IORESOURCE_MEM,
+	},
+	{
+		.name = KGSL_3D0_IRQ,
+		.start = INT_GRAPHICS,
+		.end = INT_GRAPHICS,
+		.flags = IORESOURCE_IRQ,
+	},
 };
+
+static struct kgsl_device_platform_data kgsl_3d0_pdata = {
+	.pwr_data = {
+		.pwrlevel = {
+			{
+				.gpu_freq = 0,
+				.bus_freq = 128000000,
+			},
+		},
+		.init_level = 0,
+		.num_levels = 1,
+		.set_grp_async = NULL,
+		.idle_timeout = HZ/5,
+	},
+	.clk = {
+		.name = {
+			.clk = "grp_clk",
+		},
+	},
+	.imem_clk_name = {
+		.clk = "imem_clk",
+	},
+};
+
+struct platform_device msm_kgsl_3d0 = {
+	.name = "kgsl-3d0",
+	.id = 0,
+	.num_resources = ARRAY_SIZE(kgsl_3d0_resources),
+	.resource = kgsl_3d0_resources,
+	.dev = {
+		.platform_data = &kgsl_3d0_pdata,
+	},
+};
+/* end kgsl */
 
 ///////////////////////////////////////////////////////////////////////
 // Memory 
@@ -936,7 +960,7 @@ static struct platform_device *devices[] __initdata =
 	&msm_device_i2c,
 	&ds2746_battery_pdev,
 	&htc_battery_pdev,
-	&msm_kgsl_device,
+	&msm_kgsl_3d0,
 	&msm_camera_sensor_s5k3e2fx,
 	&htcleo_flashlight_device,
 	&htc_headset_mgr,
@@ -1074,7 +1098,7 @@ static void __init htcleo_init(void)
 	htcleo_audio_init();
 	
 	msm_device_i2c_init();
-
+#if 0
 	/* set the gpu power rail to manual mode so clk en/dis will not
 	* turn off gpu power, and hang it on resume */
 
@@ -1082,6 +1106,7 @@ static void __init htcleo_init(void)
 	htcleo_kgsl_power(false);
 	mdelay(100);
 	htcleo_kgsl_power(true);
+#endif
 
 	msm_device_uart_dm1.dev.platform_data = &msm_uart_dm1_pdata;
 	msm_device_uart_dm1.name = "msm_serial_hs_bcm"; /* for bcm */
