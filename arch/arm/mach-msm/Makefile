@@ -16,9 +16,9 @@ obj-y += proc_comm.o
 obj-y += amss_para.o
 obj-$(CONFIG_ARCH_MSM_ARM11) += acpuclock-arm11.o idle.o
 obj-$(CONFIG_ARCH_QSD8X50) += arch-init-scorpion.o acpuclock-scorpion.o
-obj-$(CONFIG_ARCH_MSM7X30) += acpuclock-7x30.o internal_power_rail.o
+obj-$(CONFIG_ARCH_MSM7X30) += acpuclock-7x30.o
 obj-$(CONFIG_ACPUCLOCK_DEBUG) += acpuclock_debug.o
-obj-$(CONFIG_ARCH_MSM7X30) += clock-7x30.o arch-init-7x30.o socinfo.o
+obj-$(CONFIG_ARCH_MSM7X30) += clock-7x30.o arch-init-7x30.o
 obj-$(CONFIG_ARCH_MSM7X30) += spm.o
 obj-$(CONFIG_MSM_CPU_AVS) += avs.o avs_hw.o
 
@@ -30,6 +30,7 @@ endif
 
 obj-y += nand_partitions.o
 obj-y += drv_callback.o
+obj-y += socinfo.o
 obj-y += radio_feedback.o
 obj-$(CONFIG_ARCH_QSD8X50) += pmic.o
 ifndef CONFIG_MACH_HTCLEO
@@ -39,7 +40,7 @@ obj-$(CONFIG_ARCH_QSD8X50) += board-htcleo-wifi-nvs.o
 endif
 
 obj-$(CONFIG_SMP) += headsmp.o platsmp.o
-obj-$(CONFIG_ARCH_MSM8X60) += devices-msm8x60.o clock-local.o clock-8x60.o acpuclock-8x60.o clock-debug.o socinfo.o
+obj-$(CONFIG_ARCH_MSM8X60) += devices-msm8x60.o clock-local.o clock-8x60.o acpuclock-8x60.o clock-debug.o
 obj-$(CONFIG_ARCH_MSM8X60) += clock-rpm.o spm.o restart.o mpm.o mpp.o
 obj-$(CONFIG_ARCH_MSM8X60) += subsystem-fatal-8x60.o
 obj-$(CONFIG_ARCH_MSM8X60) += saw-regulator.o
@@ -130,6 +131,7 @@ obj-$(CONFIG_MSM_SMD) += smd_qmi.o
 obj-y += clock-pcom.o
 obj-y += clock.o
 endif
+obj-y += internal_power_rail.o
 endif
 endif
 
