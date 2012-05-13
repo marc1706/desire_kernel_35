@@ -414,21 +414,23 @@ static void flush_imgs(struct mdp_blit_req *req, struct ppp_regs *regs,
 #ifdef CONFIG_ANDROID_PMEM
 	uint32_t src0_len, src1_len, dst0_len, dst1_len;
 
-	/* flush src images to memory before dma to mdp */
-	get_len(&req->src, &req->src_rect, regs->src_bpp, &src0_len,
-		&src1_len);
-	flush_pmem_file(src_file, req->src.offset, src0_len);
-	if (IS_PSEUDOPLNR(req->src.format))
-		flush_pmem_file(src_file, req->src.offset + src0_len,
-				src1_len);
+	if (!(req->flags & MDP_BLIT_NON_CACHED)) {
+		/* flush src images to memory before dma to mdp */
+		get_len(&req->src, &req->src_rect, regs->src_bpp, &src0_len,
+			&src1_len);
+		flush_pmem_file(src_file, req->src.offset, src0_len);
+		if (IS_PSEUDOPLNR(req->src.format))
+			flush_pmem_file(src_file, req->src.offset + src0_len,
+					src1_len);
 
-	/* flush dst images */
-	get_len(&req->dst, &req->dst_rect, regs->dst_bpp, &dst0_len,
-		&dst1_len);
-	flush_pmem_file(dst_file, req->dst.offset, dst0_len);
-	if (IS_PSEUDOPLNR(req->dst.format))
-		flush_pmem_file(dst_file, req->dst.offset + dst0_len,
-				dst1_len);
+		/* flush dst images */
+		get_len(&req->dst, &req->dst_rect, regs->dst_bpp, &dst0_len,
+			&dst1_len);
+		flush_pmem_file(dst_file, req->dst.offset, dst0_len);
+		if (IS_PSEUDOPLNR(req->dst.format))
+			flush_pmem_file(dst_file, req->dst.offset + dst0_len,
+					dst1_len);
+	}
 #endif
 }
 
@@ -511,18 +513,17 @@ static int send_blit(const struct mdp_info *mdp, struct mdp_blit_req *req,
 		mdp_writel_dbg(mdp, regs->bg_img_sz, MDP_PPP_BG_IMAGE_SIZE);
 		mdp_writel_dbg(mdp, regs->bg_alpha_sel,
 			       MDP_PPP_BLEND_BG_ALPHA_SEL);
-#if defined(CONFIG_MACH_HTCLEO)
+#if 0 /* zeusk: defined(CONFIG_MACH_HTCLEO) */
       		mdp_writel_dbg(mdp, 0, MDP_TFETCH_TEST_MODE);
 #endif
 #endif
 	}
-	if( src_file != (struct file *) -1 && dst_file != (struct file *) -1 )
-		flush_imgs(req, regs, src_file, dst_file);
+	flush_imgs(req, regs, src_file, dst_file);
 	mdp_writel_dbg(mdp, 0x1000, MDP_DISPLAY0_START);
 	return 0;
 }
 /*
-void mdp_dump_blit(struct mdp_blit_req *req)
+static void mdp_dump_blit(struct mdp_blit_req *req)
 {
 	PR_DISP_INFO("%s: src: w=%d h=%d f=0x%x offs=0x%x mem_id=%d\n", __func__,
 		req->src.width, req->src.height, req->src.format,
@@ -688,6 +689,18 @@ static int get_img(struct mdp_img *img, struct fb_info *info,
 	struct file *file;
 	unsigned long vstart;
 
+    if (img->memory_id & 0x40000000)
+    {
+        struct fb_info *fb = registered_fb[img->memory_id & 0x0000FFFF];
+        if (fb)
+        {
+            *start = fb->fix.smem_start;
+            *len = fb->fix.smem_len;
+        }
+        *filep = NULL;
+        return 0;
+    }
+	
 	if (!get_pmem_file(img->memory_id, start, &vstart, len, filep))
 		return 0;
 	else if (!get_msm_hw3d_file(img->memory_id, &img->offset, start, len,
@@ -708,19 +721,6 @@ static int get_img(struct mdp_img *img, struct fb_info *info,
 
 	return ret;
 }
-
-/*
-static void put_img(struct file *file)
-{
-	if (file) {
-		if (is_pmem_file(file))
-			put_pmem_file(file);
-		else if (is_msm_hw3d_file(file))
-			put_msm_hw3d_file(file);
-	}
-}
-*/
-
 void put_img(struct file *p_src_file)
 {
 #ifdef CONFIG_ANDROID_PMEM
@@ -810,12 +810,6 @@ int mdp_ppp_blit(struct mdp_info *mdp, struct fb_info *fb,
 		put_img(src_file);
 		return -EINVAL;
 	}
-
-	if (unlikely(req->src.format > ARRAY_SIZE(src_img_cfg) ||
-		req->dst.format > ARRAY_SIZE(dst_img_cfg))) {
-		return -EINVAL;
-	}
-
 	mutex_lock(&mdp_mutex);
 
 	/* transp_masking unimplemented */
@@ -837,32 +831,4 @@ void mdp_ppp_handle_isr(struct mdp_info *mdp, uint32_t mask)
 		wake_up(&mdp_ppp_waitqueue);
 }
 
-int mdp_fb_mirror(struct mdp_device *mdp_dev,
-		struct fb_info *src_fb, struct fb_info *dst_fb,
-		struct mdp_blit_req *req)
-{
-	int ret;
-	struct mdp_info *mdp = container_of(mdp_dev, struct mdp_info, mdp_dev);
 
-	if (!src_fb || !dst_fb)
-		return -EINVAL;
-	mdp->enable_irq(mdp, DL0_ROI_DONE);
-	ret = process_blit(mdp, req, (struct file *)-1, src_fb->fix.smem_start,
-			src_fb->fix.smem_len, (struct file *)-1,
-			dst_fb->fix.smem_start, dst_fb->fix.smem_len);
-	if (ret)
-		goto err_bad_blit;
-
-	ret = mdp_ppp_wait(mdp);
-	if (ret) {
-		PR_DISP_ERR("mdp_ppp_wait error\n");
-		goto err_wait_failed;
-	}
-	return 0;
-
-err_bad_blit:
-	mdp->disable_irq(mdp, DL0_ROI_DONE);
-
-err_wait_failed:
-	return ret;
-}

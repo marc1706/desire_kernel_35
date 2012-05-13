@@ -15,6 +15,7 @@
 #include <linux/spinlock.h>
 #include <linux/genalloc.h>
 #include <linux/slab.h>
+#include <linux/sched.h>
 
 #include "kgsl.h"
 #include "kgsl_mmu.h"
@@ -34,7 +35,7 @@ sysfs_show_ptpool_entries(struct kobject *kobj,
 			  struct kobj_attribute *attr,
 			  char *buf)
 {
-	return sprintf(buf, "%d\n", kgsl_driver.ptpool.entries);
+	return snprintf(buf, PAGE_SIZE, "%d\n", kgsl_driver.ptpool.entries);
 }
 
 static ssize_t
@@ -42,7 +43,8 @@ sysfs_show_ptpool_min(struct kobject *kobj,
 			 struct kobj_attribute *attr,
 			 char *buf)
 {
-	return sprintf(buf, "%d\n", kgsl_driver.ptpool.static_entries);
+	return snprintf(buf, PAGE_SIZE, "%d\n",
+			kgsl_driver.ptpool.static_entries);
 }
 
 static ssize_t
@@ -50,7 +52,7 @@ sysfs_show_ptpool_chunks(struct kobject *kobj,
 			 struct kobj_attribute *attr,
 			 char *buf)
 {
-	return sprintf(buf, "%d\n", kgsl_driver.ptpool.chunks);
+	return snprintf(buf, PAGE_SIZE, "%d\n", kgsl_driver.ptpool.chunks);
 }
 
 static ssize_t
@@ -58,7 +60,7 @@ sysfs_show_ptpool_ptsize(struct kobject *kobj,
 			 struct kobj_attribute *attr,
 			 char *buf)
 {
-	return sprintf(buf, "%d\n", kgsl_driver.ptpool.ptsize);
+	return snprintf(buf, PAGE_SIZE, "%d\n", kgsl_driver.ptpool.ptsize);
 }
 
 static struct kobj_attribute attr_ptpool_entries = {
@@ -371,7 +373,7 @@ sysfs_show_entries(struct kobject *kobj,
 	pt = _get_pt_from_kobj(kobj);
 
 	if (pt)
-		ret += sprintf(buf, "%d\n", pt->stats.entries);
+		ret += snprintf(buf, PAGE_SIZE, "%d\n", pt->stats.entries);
 
 	mutex_unlock(&kgsl_driver.pt_mutex);
 	return ret;
@@ -389,7 +391,7 @@ sysfs_show_mapped(struct kobject *kobj,
 	pt = _get_pt_from_kobj(kobj);
 
 	if (pt)
-		ret += sprintf(buf, "%d\n", pt->stats.mapped);
+		ret += snprintf(buf, PAGE_SIZE, "%d\n", pt->stats.mapped);
 
 	mutex_unlock(&kgsl_driver.pt_mutex);
 	return ret;
@@ -407,7 +409,7 @@ sysfs_show_va_range(struct kobject *kobj,
 	pt = _get_pt_from_kobj(kobj);
 
 	if (pt)
-		ret += sprintf(buf, "0x%x\n", pt->va_range);
+		ret += snprintf(buf, PAGE_SIZE, "0x%x\n", pt->va_range);
 
 	mutex_unlock(&kgsl_driver.pt_mutex);
 	return ret;
@@ -425,7 +427,7 @@ sysfs_show_max_mapped(struct kobject *kobj,
 	pt = _get_pt_from_kobj(kobj);
 
 	if (pt)
-		ret += sprintf(buf, "%d\n", pt->stats.max_mapped);
+		ret += snprintf(buf, PAGE_SIZE, "%d\n", pt->stats.max_mapped);
 
 	mutex_unlock(&kgsl_driver.pt_mutex);
 	return ret;
@@ -443,7 +445,7 @@ sysfs_show_max_entries(struct kobject *kobj,
 	pt = _get_pt_from_kobj(kobj);
 
 	if (pt)
-		ret += sprintf(buf, "%d\n", pt->stats.max_entries);
+		ret += snprintf(buf, PAGE_SIZE, "%d\n", pt->stats.max_entries);
 
 	mutex_unlock(&kgsl_driver.pt_mutex);
 	return ret;
@@ -577,6 +579,7 @@ void kgsl_mh_intrcallback(struct kgsl_device *device)
 	* caused them, but we don't have enough info to figure that out yet.
 	*/
 }
+EXPORT_SYMBOL(kgsl_mh_intrcallback);
 
 static int kgsl_setup_pt(struct kgsl_pagetable *pt)
 {
@@ -789,6 +792,7 @@ int kgsl_mmu_setstate(struct kgsl_device *device,
 
 	return status;
 }
+EXPORT_SYMBOL(kgsl_mmu_setstate);
 
 int kgsl_mmu_init(struct kgsl_device *device)
 {
@@ -899,6 +903,7 @@ error:
 	kgsl_regwrite(device, device->mmu.reg.config, 0x00000000);
 	return status;
 }
+EXPORT_SYMBOL(kgsl_mmu_start);
 
 unsigned int kgsl_virtaddr_to_physaddr(void *virtaddr)
 {
@@ -1061,6 +1066,7 @@ kgsl_mmu_unmap(struct kgsl_pagetable *pagetable,
 
 	return 0;
 }
+EXPORT_SYMBOL(kgsl_mmu_unmap);
 
 int kgsl_mmu_map_global(struct kgsl_pagetable *pagetable,
 			struct kgsl_memdesc *memdesc, unsigned int protflags)
@@ -1092,6 +1098,7 @@ error_unmap:
 error:
 	return result;
 }
+EXPORT_SYMBOL(kgsl_mmu_map_global);
 
 int kgsl_mmu_stop(struct kgsl_device *device)
 {
@@ -1113,6 +1120,7 @@ int kgsl_mmu_stop(struct kgsl_device *device)
 
 	return 0;
 }
+EXPORT_SYMBOL(kgsl_mmu_stop);
 
 int kgsl_mmu_close(struct kgsl_device *device)
 {

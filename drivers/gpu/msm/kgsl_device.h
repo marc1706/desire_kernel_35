@@ -35,16 +35,13 @@
 #include "kgsl_mmu.h"
 #include "kgsl_pwrctrl.h"
 #include "kgsl_log.h"
+#include "kgsl_pwrscale.h"
 
 #define KGSL_TIMEOUT_NONE       0
 #define KGSL_TIMEOUT_DEFAULT    0xFFFFFFFF
 
 #define FIRST_TIMEOUT (HZ / 2)
 
-#define KGSL_CHIPID_YAMATODX_REV21  0x20100
-#define KGSL_CHIPID_YAMATODX_REV211 0x20101
-#define KGSL_CHIPID_LEIA_REV470_TEMP 0x10001
-#define KGSL_CHIPID_LEIA_REV470 0x2010000
 
 /* KGSL device state is initialized to INIT when platform_probe		*
  * sucessfully initialized the device.  Once a device has been opened	*
@@ -71,6 +68,7 @@ struct kgsl_device;
 struct platform_device;
 struct kgsl_device_private;
 struct kgsl_context;
+struct kgsl_power_stats;
 
 struct kgsl_functable {
 	void (*device_regread) (struct kgsl_device *device,
@@ -120,7 +118,8 @@ struct kgsl_functable {
 
 	int (*device_cleanup_pt)(struct kgsl_device *device,
 				 struct kgsl_pagetable *pagetable);
-	unsigned int (*device_idle_calc)(struct kgsl_device *device);
+	void (*device_power_stats)(struct kgsl_device *device,
+		struct kgsl_power_stats *stats);
 };
 
 struct kgsl_memregion {
@@ -137,7 +136,6 @@ struct kgsl_device {
 	unsigned int ver_minor;
 	uint32_t flags;
 	enum kgsl_deviceid id;
-	unsigned int chip_id;
 	struct kgsl_memregion regspace;
 	struct kgsl_memdesc memstore;
 	const char *iomemname;
@@ -161,7 +159,7 @@ struct kgsl_device {
 
 	wait_queue_head_t wait_queue;
 	struct workqueue_struct *work_queue;
-	struct platform_device *pdev;
+	struct device *parentdev;
 	struct completion recovery_gate;
 	struct dentry *d_debugfs;
 	struct idr context_idr;
@@ -173,6 +171,8 @@ struct kgsl_device {
 	int mem_log;
 	int pwr_log;
 	struct wake_lock idle_wakelock;
+	struct kgsl_pwrscale pwrscale;
+	struct kobject pwrscale_kobj;
 };
 
 struct kgsl_context {
@@ -195,10 +195,10 @@ struct kgsl_process_private {
 	struct kobject *kobj;
 
 	struct {
-		unsigned int vmalloc;
-		unsigned int vmalloc_max;
-		unsigned int exmem;
-		unsigned int exmem_max;
+		unsigned int user;
+		unsigned int user_max;
+		unsigned int mapped;
+		unsigned int mapped_max;
 		unsigned int flushes;
 	} stats;
 };
@@ -206,6 +206,11 @@ struct kgsl_process_private {
 struct kgsl_device_private {
 	struct kgsl_device *device;
 	struct kgsl_process_private *process_priv;
+};
+
+struct kgsl_power_stats {
+	s64 total_time;
+	s64 busy_time;
 };
 
 struct kgsl_device *kgsl_get_device(int dev_idx);

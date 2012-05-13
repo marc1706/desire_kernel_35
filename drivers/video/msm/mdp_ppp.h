@@ -16,7 +16,6 @@
 #define _VIDEO_MSM_MDP_PPP_H_
 
 #include <linux/types.h>
-#define  PPP_DUMP_BLITS 0
 
 struct ppp_regs {
 	uint32_t src0;
@@ -87,9 +86,7 @@ int mdp_ppp_do_blit(struct mdp_info *mdp, struct mdp_blit_req *req,
 		    struct file *src_file, unsigned long src_start,
 		    unsigned long src_len, struct file *dst_file,
 		    unsigned long dst_start, unsigned long dst_len);
-int mdp_fb_mirror(struct mdp_device *mdp_dev,
-		struct fb_info *src_fb, struct fb_info *dst_fb,
-		struct mdp_blit_req *req);
+
 #else
 
 static inline int mdp_get_bytes_per_pixel(int format) { return -1; }

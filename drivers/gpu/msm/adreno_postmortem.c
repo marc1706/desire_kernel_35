@@ -20,6 +20,7 @@
 #include "adreno_ringbuffer.h"
 #include "adreno_postmortem.h"
 #include "adreno_debugfs.h"
+#include "kgsl_cffdump.h"
 
 #include "a200_reg.h"
 
@@ -153,22 +154,6 @@ static const int a220_registers[] = {
 
 	0x10000, 0x1000c, 0x12000, 0x12014,
 	0x12400, 0x12400, 0x12420, 0x12420
-};
-
-static struct {
-	int id;
-	const int *registers;
-	int len;
-} kgsl_registers[] = {
-	{ KGSL_CHIPID_LEIA_REV470, a220_registers,
-	  ARRAY_SIZE(a220_registers) / 2 },
-	{ KGSL_CHIPID_LEIA_REV470_TEMP, a220_registers,
-	  ARRAY_SIZE(a220_registers) / 2 },
-	{ KGSL_CHIPID_YAMATODX_REV21, a200_registers,
-	  ARRAY_SIZE(a200_registers) / 2 },
-	{ KGSL_CHIPID_YAMATODX_REV211, a200_registers,
-	  ARRAY_SIZE(a200_registers) / 2 },
-	{ 0x0, NULL, 0},
 };
 
 static uint32_t adreno_is_pm4_len(uint32_t word)
@@ -424,6 +409,9 @@ static int adreno_dump_fields_line(struct kgsl_device *device,
 	for (  ; num && sptr < slen; num--, l++) {
 		int ilen = strlen(l->display);
 
+		if (!l->show)
+			continue;
+
 		if (count)
 			ilen += strlen("  | ");
 
@@ -487,7 +475,7 @@ static int adreno_dump(struct kgsl_device *device)
 
 	mb();
 
-	KGSL_LOG_DUMP(device, "POWER: FLAGS = %08X | ACTIVE POWERLEVEL = %08X",
+	KGSL_LOG_DUMP(device, "POWER: FLAGS = %08lX | ACTIVE POWERLEVEL = %08X",
 			pwr->power_flags, pwr->active_pwrlevel);
 
 	KGSL_LOG_DUMP(device, "POWER: INTERVAL TIMEOUT = %08X ",
@@ -515,7 +503,7 @@ static int adreno_dump(struct kgsl_device *device)
 	{
 		char cmdFifo[16];
 		struct log_field lines[] = {
-			{rbbm_status &  0x000F, cmdFifo},
+			{rbbm_status &  0x001F, cmdFifo},
 			{rbbm_status &  BIT(5), "TC busy     "},
 			{rbbm_status &  BIT(8), "HIRQ pending"},
 			{rbbm_status &  BIT(9), "CPRQ pending"},
@@ -771,13 +759,12 @@ static int adreno_dump(struct kgsl_device *device)
 
 	/* Dump the registers if the user asked for it */
 
-	for (i = 0; kgsl_pmregs_enabled() && kgsl_registers[i].id; i++) {
-		if (kgsl_registers[i].id == device->chip_id) {
-			adreno_dump_regs(device, kgsl_registers[i].registers,
-				       kgsl_registers[i].len);
-			break;
-		}
-	}
+	if (adreno_is_a20x(adreno_dev))
+		adreno_dump_regs(device, a200_registers,
+			ARRAY_SIZE(a200_registers) / 2);
+	else if (adreno_is_a22x(adreno_dev))
+		adreno_dump_regs(device, a220_registers,
+			ARRAY_SIZE(a220_registers) / 2);
 
 error_vfree:
 	vfree(rb_copy);
@@ -798,6 +785,8 @@ int adreno_postmortem_dump(struct kgsl_device *device, int manual)
 	bool saved_nap;
 
 	BUG_ON(device == NULL);
+
+	kgsl_cffdump_hang(device->id);
 
 	/* For a manual dump, make sure that the system is idle */
 
@@ -824,7 +813,7 @@ int adreno_postmortem_dump(struct kgsl_device *device, int manual)
 	kgsl_pwrctrl_wake(device);
 
 	/* Disable the irq */
-	kgsl_pwrctrl_irq(device, KGSL_PWRFLAGS_IRQ_OFF);
+	kgsl_pwrctrl_irq(device, KGSL_PWRFLAGS_OFF);
 
 	/* If this is not a manual trigger, then set up the
 	   state to try to recover */
@@ -852,7 +841,7 @@ int adreno_postmortem_dump(struct kgsl_device *device, int manual)
 	   are until recovery kicks in. */
 
 	if (manual) {
-		kgsl_pwrctrl_irq(device, KGSL_PWRFLAGS_IRQ_ON);
+		kgsl_pwrctrl_irq(device, KGSL_PWRFLAGS_ON);
 
 		/* try to go into a sleep mode until the next event */
 		device->requested_state = KGSL_STATE_SLEEP;

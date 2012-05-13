@@ -131,7 +131,7 @@ obj-$(CONFIG_MSM_SMD) += smd_qmi.o
 obj-y += clock-pcom.o
 obj-y += clock.o
 endif
-obj-y += internal_power_rail.o
+#obj-y += internal_power_rail.o
 endif
 endif
 

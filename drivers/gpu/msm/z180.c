@@ -157,7 +157,6 @@ static struct z180_device device_2d0 = {
 			},
 		},
 		.pwrctrl = {
-			.pwr_rail = PWR_RAIL_GRP_2D_CLK,
 			.regulator_name = "fs_gfx2d0",
 			.irq_name = KGSL_2D0_IRQ,
 		},
@@ -197,7 +196,6 @@ static struct z180_device device_2d1 = {
 			},
 		},
 		.pwrctrl = {
-			.pwr_rail = PWR_RAIL_GRP_2D_CLK,
 			.regulator_name = "fs_gfx2d1",
 			.irq_name = KGSL_2D1_IRQ,
 		},
@@ -246,9 +244,10 @@ static irqreturn_t z180_isr(int irq, void *data)
 		}
 	}
 
-	if (device->pwrctrl.nap_allowed == true) {
+	if ((device->pwrctrl.nap_allowed == true) &&
+		(device->requested_state == KGSL_STATE_NONE)) {
 		device->requested_state = KGSL_STATE_NAP;
-		schedule_work(&device->idle_check_ws);
+		queue_work(device->work_queue, &device->idle_check_ws);
 	}
 	mod_timer(&device->idle_timer,
 			jiffies + device->pwrctrl.interval_timeout);
@@ -558,7 +557,7 @@ static int __devinit z180_probe(struct platform_device *pdev)
 	struct z180_device *z180_dev;
 
 	device = (struct kgsl_device *)pdev->id_entry->driver_data;
-	device->pdev = pdev;
+	device->parentdev = &pdev->dev;
 
 	z180_getfunctable(&device->ftbl);
 
@@ -578,7 +577,7 @@ static int __devinit z180_probe(struct platform_device *pdev)
 error_close_ringbuffer:
 	z180_ringbuffer_close(device);
 error:
-	device->pdev = NULL;
+	device->parentdev = NULL;
 	return status;
 }
 
@@ -603,13 +602,7 @@ static int z180_start(struct kgsl_device *device, unsigned int init_ram)
 	device->requested_state = KGSL_STATE_NONE;
 	KGSL_PWR_WARN(device, "state -> INIT, device %d\n", device->id);
 
-	/* Order pwrrail/clk sequence based upon platform. */
-	if (device->pwrctrl.pwrrail_first)
-		kgsl_pwrctrl_pwrrail(device, KGSL_PWRFLAGS_POWER_ON);
-	kgsl_pwrctrl_clk(device, KGSL_PWRFLAGS_CLK_ON);
-	kgsl_pwrctrl_axi(device, KGSL_PWRFLAGS_AXI_ON);
-	if (!device->pwrctrl.pwrrail_first)
-		kgsl_pwrctrl_pwrrail(device, KGSL_PWRFLAGS_POWER_ON);
+	kgsl_pwrctrl_enable(device);
 
 	/* Set up MH arbiter.  MH offsets are considered to be dword
 	 * based, therefore no down shift. */
@@ -633,8 +626,7 @@ static int z180_start(struct kgsl_device *device, unsigned int init_ram)
 	return 0;
 error_clk_off:
 	z180_regwrite(device, (ADDR_VGC_IRQENABLE >> 2), 0);
-	kgsl_pwrctrl_axi(device, KGSL_PWRFLAGS_AXI_OFF);
-	kgsl_pwrctrl_clk(device, KGSL_PWRFLAGS_CLK_OFF);
+	kgsl_pwrctrl_disable(device);
 error_mmu_stop:
 	kgsl_mmu_stop(device);
 	return status;
@@ -648,13 +640,10 @@ static int z180_stop(struct kgsl_device *device)
 
 	kgsl_mmu_stop(device);
 
-	kgsl_pwrctrl_irq(device, KGSL_PWRFLAGS_IRQ_OFF);
-	if (!device->pwrctrl.pwrrail_first)
-		kgsl_pwrctrl_pwrrail(device, KGSL_PWRFLAGS_POWER_OFF);
-	kgsl_pwrctrl_axi(device, KGSL_PWRFLAGS_AXI_OFF);
-	kgsl_pwrctrl_clk(device, KGSL_PWRFLAGS_CLK_OFF);
-	if (device->pwrctrl.pwrrail_first)
-		kgsl_pwrctrl_pwrrail(device, KGSL_PWRFLAGS_POWER_OFF);
+	/* Disable the clocks before the power rail. */
+	kgsl_pwrctrl_irq(device, KGSL_PWRFLAGS_OFF);
+
+	kgsl_pwrctrl_disable(device);
 
 	return 0;
 }
@@ -678,7 +667,7 @@ static int z180_getproperty(struct kgsl_device *device,
 
 		memset(&devinfo, 0, sizeof(devinfo));
 		devinfo.device_id = device->id+1;
-		devinfo.chip_id = device->chip_id;
+		devinfo.chip_id = 0;
 		devinfo.mmu_enabled = kgsl_mmu_enabled();
 
 		if (copy_to_user(value, &devinfo, sizeof(devinfo)) !=
@@ -1005,9 +994,11 @@ static long z180_ioctl(struct kgsl_device_private *dev_priv,
 
 }
 
-static unsigned int z180_idle_calc(struct kgsl_device *device)
+static void z180_power_stats(struct kgsl_device *device,
+			    struct kgsl_power_stats *stats)
 {
-	return device->pwrctrl.time;
+	stats->total_time = 0;
+	stats->busy_time = 0;
 }
 
 static void __devinit z180_getfunctable(struct kgsl_functable *ftbl)
@@ -1034,7 +1025,7 @@ static void __devinit z180_getfunctable(struct kgsl_functable *ftbl)
 	ftbl->device_ioctl = z180_ioctl;
 	ftbl->device_setup_pt = z180_setup_pt;
 	ftbl->device_cleanup_pt = z180_cleanup_pt;
-	ftbl->device_idle_calc = z180_idle_calc;
+	ftbl->device_power_stats = z180_power_stats,
 }
 
 static struct platform_device_id z180_id_table[] = {

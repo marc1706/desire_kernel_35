@@ -105,7 +105,6 @@ struct mddi_info {
 
 	struct platform_device client_pdev;
 	unsigned type;
-	char debugfs_buf[32];
 };
 
 static void mddi_init_rev_encap(struct mddi_info *mddi);
@@ -401,12 +400,7 @@ void mddi_set_auto_hibernate(struct msm_mddi_client_data *cdata, int on)
 
 static uint16_t mddi_init_registers(struct mddi_info *mddi)
 {
-#ifdef CONFIG_MACH_MARVEL
-	mddi_writel(0x0000, VERSION);
-#else
 	mddi_writel(0x0001, VERSION);
-#endif
-
 	mddi_writel(MDDI_HOST_BYTES_PER_SUBFRAME, BPS);
 	mddi_writel(0x0003, SPM); /* subframes per media */
 	if (mddi->type == MSM_MDP_MDDI_TYPE_II)
@@ -416,8 +410,6 @@ static uint16_t mddi_init_registers(struct mddi_info *mddi)
 	mddi_writel(MDDI_HOST_TA2_LEN, TA2_LEN);
 	mddi_writel(0x003C, DISP_WAKE); /* wakeup counter */
 	mddi_writel(MDDI_HOST_REV_RATE_DIV, REV_RATE_DIV);
-	if (mddi->type == MSM_MDP_MDDI_TYPE_II)
-		mddi_writel(0x01, SF_LEN_CTL_REG);
 
 	mddi_writel(MDDI_REV_BUFFER_SIZE, REV_SIZE);
 	mddi_writel(MDDI_MAX_REV_PKT_SIZE, REV_ENCAP_SZ);
@@ -446,7 +438,7 @@ static uint16_t mddi_init_registers(struct mddi_info *mddi)
 	mddi_writel(0x0050, DRIVE_LO);
 	mddi_writel(0x00320000, PAD_IO_CTL);
 	if (mddi->type == MSM_MDP_MDDI_TYPE_II)
-		mddi_writel(0x40884020, PAD_CAL);
+		mddi_writel(0x40880020, PAD_CAL);
 	else
 		mddi_writel(0x00220020, PAD_CAL);
 #else
@@ -495,8 +487,7 @@ static void mddi_resume(struct msm_mddi_client_data *cdata)
 	struct mddi_info *mddi = container_of(cdata, struct mddi_info,
 					      client_data);
 	wake_lock(&mddi->idle_lock);
-	if (mddi->type == MSM_MDP_MDDI_TYPE_I)
-		mddi_set_auto_hibernate(&mddi->client_data, 0);
+	mddi_set_auto_hibernate(&mddi->client_data, 0);
 	/* turn on the client */
 	if (mddi->power_client)
 		mddi->power_client(&mddi->client_data, 1);
@@ -517,18 +508,17 @@ static void mddi_resume(struct msm_mddi_client_data *cdata)
 	if (mddi->type == MSM_MDP_MDDI_TYPE_I)
 		mddi_writel(MDDI_CMD_SEND_RTD, CMD);
 	mddi_wait_interrupt(mddi, MDDI_INT_NO_CMD_PKTS_PEND);
-	if (mddi->type == MSM_MDP_MDDI_TYPE_I)
-		mddi_set_auto_hibernate(&mddi->client_data, 1);
+	mddi_set_auto_hibernate(&mddi->client_data, 1);
 	wake_unlock(&mddi->idle_lock);
 }
 
 static int __init mddi_get_client_caps(struct mddi_info *mddi)
 {
-#if !defined(CONFIG_ARCH_MSM7X30)
 	int i, j;
-#endif
+
 	/* clear any stale interrupts */
 	mddi_writel(0xffffffff, INT);
+
 	mddi->int_enable = MDDI_INT_LINK_ACTIVE |
 			   MDDI_INT_IN_HIBERNATION |
 			   MDDI_INT_PRI_LINK_LIST_DONE |
@@ -541,7 +531,6 @@ static int __init mddi_get_client_caps(struct mddi_info *mddi)
 	mddi_writel(MDDI_CMD_LINK_ACTIVE, CMD);
 	mddi_wait_interrupt(mddi, MDDI_INT_NO_CMD_PKTS_PEND);
 	/*FIXME: mddi host can't get caps on MDDI type 2*/
-#if !defined(CONFIG_ARCH_MSM7X30)
 	if (mddi->type == MSM_MDP_MDDI_TYPE_I) {
 		for (j = 0; j < 3; j++) {
 			/* the toshiba vga panel does not respond to get
@@ -578,8 +567,6 @@ static int __init mddi_get_client_caps(struct mddi_info *mddi)
 		}
 		return (mddi->flags & FLAG_HAVE_CAPS);
 	} else
-		return 1;
-#endif
 		return 1;
 }
 
@@ -741,6 +728,9 @@ uint32_t mddi_remote_read(struct msm_mddi_client_data *cdata, uint32_t reg)
 
 	do {
 		init_completion(&ri.done);
+		if (mddi->type == MSM_MDP_MDDI_TYPE_II)
+			mddi_set_auto_hibernate(&mddi->client_data, 0);
+		mddi_writel(MDDI_CMD_SEND_RTD, CMD);
 		mddi->reg_read = &ri;
 		mddi_writel(mddi->reg_read_addr, PRI_PTR);
 
@@ -753,10 +743,14 @@ uint32_t mddi_remote_read(struct msm_mddi_client_data *cdata, uint32_t reg)
 		/* while((s & MDDI_STAT_PRI_LINK_LIST_DONE) == 0){ */
 		/*	s = mddi_readl(STAT); */
 		/* } */
-
-		/* Enable Periodic Reverse Encapsulation. */
-		mddi_writel(MDDI_CMD_PERIODIC_REV_ENCAP | 1, CMD);
-		mddi_wait_interrupt(mddi, MDDI_INT_NO_CMD_PKTS_PEND);
+		if (mddi->type == MSM_MDP_MDDI_TYPE_II) {
+			mddi_writel(MDDI_CMD_SEND_REV_ENCAP, CMD);
+			mddi_wait_interrupt(mddi, MDDI_INT_REV_DATA_AVAIL);
+		} else {
+			/* Enable Periodic Reverse Encapsulation. */
+			mddi_writel(MDDI_CMD_PERIODIC_REV_ENCAP | 1, CMD);
+			mddi_wait_interrupt(mddi, MDDI_INT_NO_CMD_PKTS_PEND);
+		}
 		if (wait_for_completion_timeout(&ri.done, HZ/10) == 0 &&
 		    !ri.done.done) {
 			PR_DISP_INFO("mddi_remote_read(%x) timeout "
@@ -784,6 +778,8 @@ uint32_t mddi_remote_read(struct msm_mddi_client_data *cdata, uint32_t reg)
 		       "MDDI_CMD_SEND_RTD: int %x, stat %x, rtd val %x "
 		       "curr_rev_ptr %x\n", mddi_readl(INT), mddi_readl(STAT),
 		       mddi_readl(RTD_VAL), mddi_readl(CURR_REV_PTR));
+		if (mddi->type == MSM_MDP_MDDI_TYPE_II)
+			mddi_set_auto_hibernate(&mddi->client_data, 1);
 	} while (retry_count-- > 0);
 	/* Disable Periodic Reverse Encapsulation. */
 	mddi_writel(MDDI_CMD_PERIODIC_REV_ENCAP | 0, CMD);
@@ -794,17 +790,6 @@ uint32_t mddi_remote_read(struct msm_mddi_client_data *cdata, uint32_t reg)
 	mutex_unlock(&mddi->reg_read_lock);
 	return ri.result;
 }
-
-/*FIXME: workaround for Novatek*/
-void mddi_send_powerdown(struct msm_mddi_client_data *cdata)
-{
-	struct mddi_info *mddi = container_of(cdata, struct mddi_info,
-					      client_data);
-
-	mddi_writel(MDDI_CMD_POWERDOWN, CMD);
-	mddi_wait_interrupt(mddi, MDDI_INT_IN_HIBERNATION);
-}
-
 
 static struct mddi_info mddi_info[2];
 
@@ -876,83 +861,6 @@ static void mddi_skew_calibration(struct mddi_info *mddi)
 }
 */
 
-static ssize_t mddi_reg_open(struct inode *inode, struct file *file)
-{
-        file->private_data = inode->i_private;
-        return 0;
-}
-
-static ssize_t mddi_reg_read(struct file *file, char __user *user_buf,
-                size_t count, loff_t *ppos)
-{
-        struct mddi_info *mddi = (struct mddi_info*)file->private_data;
-
-        return simple_read_from_buffer(user_buf, count, ppos, mddi->debugfs_buf, strlen(mddi->debugfs_buf));
-}
-
-static ssize_t mddi_reg_write(struct file *file, const char __user *user_buf,
-		size_t count, loff_t *ppos)
-{
-        unsigned int reg, data;
-	char debug_buf[32], type;
-        int cnt, len;
-	struct mddi_info *mddi = file->private_data;
-
-	memset(debug_buf, 0x00, sizeof(debug_buf));
-
-        if (count >= sizeof(debug_buf))
-                return -EFAULT;
-
-        if (copy_from_user(debug_buf, user_buf, count))
-                return -EFAULT;
-
-        debug_buf[count] = 0;   /* end of string */
-
-	if (debug_buf[0] == 'w') {
-		cnt = sscanf(debug_buf, "%c %x %x", &type ,&reg, &data);
-		mddi_set_auto_hibernate(&mddi->client_data, 0);
-		mddi_remote_write(&mddi->client_data, data, reg);
-		mddi_set_auto_hibernate(&mddi->client_data, 1);
-
-		len = snprintf(mddi->debugfs_buf, sizeof(mddi->debugfs_buf),
-			 "[W] reg=0x%x val=0x%x\n", reg, data);
-		PR_DISP_INFO("%s: reg=%x val=%x\n", __func__, reg, data);
-	} else {
-		cnt = sscanf(debug_buf, "%c %x", &type ,&reg);
-
-		len = snprintf(mddi->debugfs_buf, sizeof(mddi->debugfs_buf),
-			 "[R] reg=0x%x val=0x%x\n", reg,
-			mddi_remote_read(&mddi->client_data, reg));
-
-		PR_DISP_INFO("%s: reg=%x val=%x buf=%s\n", __func__, reg,
-		mddi_remote_read(&mddi->client_data, reg), debug_buf);
-	}
-
-        return count;
-}
-
-static struct file_operations mddi_reg_debugfs_fops[] = {
-        {
-		.open  = mddi_reg_open,
-		.read = mddi_reg_read,
-		.write = mddi_reg_write,
-        }
-};
-
-int mddi_reg_debugfs_init(struct mddi_info *mddi)
-{
-	struct dentry *mddi_reg_dent;
-
-        mddi_reg_dent = debugfs_create_dir("mddi", 0);
-        if (IS_ERR(mddi_reg_dent))
-                return PTR_ERR(mddi_reg_dent);
-
-        debugfs_create_file("reg", 0666, mddi_reg_dent, mddi,
-                &mddi_reg_debugfs_fops[0]);
-
-        return 0;
-}
-
 static int mddi_probe(struct platform_device *pdev)
 {
 	struct msm_mddi_platform_data *pdata = pdev->dev.platform_data;
@@ -981,7 +889,7 @@ static int mddi_probe(struct platform_device *pdev)
 	PR_DISP_INFO("mddi: init() base=0x%p irq=%d\n", mddi->base,
 	       mddi->irq);
 	mddi->power_client = pdata->power_client;
-	if (pdata->type != MSM_MDP_MDDI_TYPE_I)
+	if ((pdata->type != NULL) && (pdata->type != MSM_MDP_MDDI_TYPE_I))
 		mddi->type = pdata->type;
 
 	mutex_init(&mddi->reg_write_lock);
@@ -1091,7 +999,6 @@ dummy_client:
 	mddi->client_data.remote_read = mddi_remote_read;
 	mddi->client_data.auto_hibernate = mddi_set_auto_hibernate;
 	mddi->client_data.fb_resource = pdata->fb_resource;
-	mddi->client_data.send_powerdown = mddi_send_powerdown;
 	if (pdev->id == 0)
 		mddi->client_data.interface_type = MSM_MDDI_PMDH_INTERFACE;
 	else if (pdev->id == 1)
@@ -1106,8 +1013,6 @@ dummy_client:
 	mddi->client_pdev.dev.platform_data = &mddi->client_data;
 	PR_DISP_INFO("mddi: publish: %s\n", mddi->client_name);
 	platform_device_register(&mddi->client_pdev);
-	mddi_reg_debugfs_init(mddi);
-
 	return 0;
 
 error_mddi_interface:

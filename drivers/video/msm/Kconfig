@@ -66,31 +66,9 @@ config MSM_ROTATOR_USE_IMEM
           different function.
 
 config FB_MSM_LOGO
-	bool "MSM Frame Buffer Logo"
-	default n
-	---help---
-	  Show /initlogo.rle during boot.
-
-config MSM_HDMI_COMMON
-	bool "Turn on HDMI common interface"
-	depends on FB_MSM_OVERLAY && MSM_MDP40
-	bool
-	default n
-
-config MSM_HDMI
-	bool "Support for HDMI in QCT platform"
-	depends on MSM_MDP31 || MSM_MDP40
-	default n
-
-config MSM_HDMI_MHL
-	bool "Turn on MHL chip driver"
-	depends on FB_MSM_OVERLAY && MSM_MDP40
-	bool
-	default n
-
-config MSM_HDMI_MHL_SII9232
-	bool "support sii9232 driver"
-	depends on MSM_HDMI_MHL && MSM_MDP40
-	bool
-	default n
+       bool "Use boot splashscreen"
+       depends on FB_MSM
+       default y
+       help
+        Use logo.rle splash screen at startup
 

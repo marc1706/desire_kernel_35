@@ -389,8 +389,8 @@ static int blit_split_height(struct mdp_info *mdp, const struct mdp_blit_req *re
 	}
 
 	/* blit first region */
-	if (((splitreq.flags & MDP_ROT_MASK) == MDP_ROT_90) ||
-		((splitreq.flags & MDP_ROT_MASK) == 0x0)) {
+	if (((splitreq.flags & 0x07) == MDP_ROT_90) ||
+		((splitreq.flags & 0x07) == 0x0)) {
 		splitreq.src_rect.h = s_h_0;
 		splitreq.src_rect.y = s_y_0;
 		splitreq.dst_rect.h = d_h_0;
@@ -416,8 +416,8 @@ static int blit_split_height(struct mdp_info *mdp, const struct mdp_blit_req *re
 		return ret;
 
 	/* blit second region */
-	if (((splitreq.flags & MDP_ROT_MASK) == MDP_ROT_90) ||
-		((splitreq.flags & MDP_ROT_MASK) == 0x0)) {
+	if (((splitreq.flags & 0x07) == MDP_ROT_90) ||
+		((splitreq.flags & 0x07) == 0x0)) {
 		splitreq.src_rect.h = s_h_1;
 		splitreq.src_rect.y = s_y_1;
 		splitreq.dst_rect.h = d_h_1;
@@ -499,8 +499,8 @@ static int blit_split_width(struct mdp_info *mdp, const struct mdp_blit_req *req
 	}
 
 	/* blit first region */
-	if (((splitreq.flags & MDP_ROT_MASK) == MDP_ROT_270) ||
-		((splitreq.flags & MDP_ROT_MASK) == 0x0)) {
+	if (((splitreq.flags & 0x07) == MDP_ROT_270) ||
+		((splitreq.flags & 0x07) == 0x0)) {
 		splitreq.src_rect.h = s_h_0;
 		splitreq.src_rect.y = s_y_0;
 		splitreq.dst_rect.h = d_h_0;
@@ -534,8 +534,8 @@ static int blit_split_width(struct mdp_info *mdp, const struct mdp_blit_req *req
 		return ret;
 
 	/* blit second region */
-	if (((splitreq.flags & MDP_ROT_MASK) == MDP_ROT_270) ||
-		((splitreq.flags & MDP_ROT_MASK) == 0x0)) {
+	if (((splitreq.flags & 0x07) == MDP_ROT_270) ||
+		((splitreq.flags & 0x07) == 0x0)) {
 		splitreq.src_rect.h = s_h_1;
 		splitreq.src_rect.y = s_y_1;
 		splitreq.dst_rect.h = d_h_1;

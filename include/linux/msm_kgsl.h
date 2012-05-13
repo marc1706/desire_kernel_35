@@ -35,7 +35,7 @@
 #define _MSM_KGSL_H
 
 #define KGSL_VERSION_MAJOR        3
-#define KGSL_VERSION_MINOR        3
+#define KGSL_VERSION_MINOR        7
 
 /*context flags */
 #define KGSL_CONTEXT_SAVE_GMEM	1
@@ -83,9 +83,11 @@ struct kgsl_devinfo {
 	unsigned int chip_id;
 	unsigned int mmu_enabled;
 	unsigned int gmem_gpubaseaddr;
-	/* if gmem_hostbaseaddr is NULL, we would know its not mapped into
-	 * mmio space */
-	unsigned int gmem_hostbaseaddr;
+	/*
+	* This field contains the adreno revision
+	* number 200, 205, 220, etc...
+	*/
+	unsigned int gpu_id;
 	unsigned int gmem_sizebytes;
 };
 
@@ -148,7 +150,6 @@ struct kgsl_version {
 };
 
 #ifdef __KERNEL__
-#include <mach/msm_bus.h>
 
 #define KGSL_3D0_REG_MEMORY	"kgsl_3d0_reg_memory"
 #define KGSL_3D0_IRQ		"kgsl_3d0_irq"
@@ -169,7 +170,6 @@ struct kgsl_device_pwr_data {
 	int (*set_grp_async)(void);
 	unsigned int idle_timeout;
 	unsigned int nap_allowed;
-	bool pwrrail_first;
 	unsigned int idle_pass;
 };
 
@@ -271,8 +271,11 @@ struct kgsl_cmdstream_readtimestamp {
 	unsigned int timestamp; /*output param */
 };
 
-#define IOCTL_KGSL_CMDSTREAM_READTIMESTAMP \
+#define IOCTL_KGSL_CMDSTREAM_READTIMESTAMP_OLD \
 	_IOR(KGSL_IOC_TYPE, 0x11, struct kgsl_cmdstream_readtimestamp)
+
+#define IOCTL_KGSL_CMDSTREAM_READTIMESTAMP \
+	_IOWR(KGSL_IOC_TYPE, 0x11, struct kgsl_cmdstream_readtimestamp)
 
 /* free memory when the GPU reaches a given timestamp.
  * gpuaddr specify a memory region created by a
@@ -351,6 +354,18 @@ struct kgsl_sharedmem_free {
 #define IOCTL_KGSL_SHAREDMEM_FREE \
 	_IOW(KGSL_IOC_TYPE, 0x21, struct kgsl_sharedmem_free)
 
+struct kgsl_cff_user_event {
+	unsigned char cff_opcode;
+	unsigned int op1;
+	unsigned int op2;
+	unsigned int op3;
+	unsigned int op4;
+	unsigned int op5;
+	unsigned int __pad[2];
+};
+
+#define IOCTL_KGSL_CFF_USER_EVENT \
+	_IOW(KGSL_IOC_TYPE, 0x31, struct kgsl_cff_user_event)
 
 struct kgsl_gmem_desc {
 	unsigned int x;
@@ -429,6 +444,15 @@ struct kgsl_gpumem_alloc {
 
 #define IOCTL_KGSL_GPUMEM_ALLOC \
 	_IOWR(KGSL_IOC_TYPE, 0x2f, struct kgsl_gpumem_alloc)
+
+struct kgsl_cff_syncmem {
+	unsigned int gpuaddr;
+	unsigned int len;
+	unsigned int __pad[2]; /* For future binary compatibility */
+};
+
+#define IOCTL_KGSL_CFF_SYNCMEM \
+	_IOW(KGSL_IOC_TYPE, 0x30, struct kgsl_cff_syncmem)
 
 #ifdef __KERNEL__
 #ifdef CONFIG_MSM_KGSL_DRM

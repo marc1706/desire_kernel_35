@@ -37,7 +37,6 @@
 #include <linux/mutex.h>
 #include <linux/cdev.h>
 #include <linux/regulator/consumer.h>
-#include <mach/socinfo.h>
 
 #include <linux/atomic.h>
 
@@ -133,14 +132,16 @@ struct kgsl_driver {
 		unsigned int vmalloc_max;
 		unsigned int coherent;
 		unsigned int coherent_max;
+		unsigned int mapped;
+		unsigned int mapped_max;
 		unsigned int histogram[16];
 	} stats;
 };
 
 extern struct kgsl_driver kgsl_driver;
 
-#define KGSL_VMALLOC_MEMORY 0
-#define KGSL_EXTERNAL_MEMORY 1
+#define KGSL_USER_MEMORY 1
+#define KGSL_MAPPED_MEMORY 2
 
 struct kgsl_mem_entry {
 	struct kref refcount;
@@ -267,6 +268,23 @@ static inline void
 kgsl_mem_entry_put(struct kgsl_mem_entry *entry)
 {
 	kref_put(&entry->refcount, kgsl_mem_entry_destroy);
+}
+
+static inline int kgsl_create_device_sysfs_files(struct device *root,
+	struct device_attribute **list)
+{
+	int ret = 0, i;
+	for (i = 0; list[i] != NULL; i++)
+		ret |= device_create_file(root, list[i]);
+	return ret;
+}
+
+static inline void kgsl_remove_device_sysfs_files(struct device *root,
+	struct device_attribute **list)
+{
+	int i;
+	for (i = 0; list[i] != NULL; i++)
+		device_remove_file(root, list[i]);
 }
 
 #endif /* __KGSL_H */

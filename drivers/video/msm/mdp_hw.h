@@ -57,12 +57,9 @@ struct mdp_info {
 	uint32_t state;
 	struct timer_list standby_timer;
 	struct timer_list dma_timer;
-#ifdef CONFIG_MSM_MDP40
-	int hw_version;
-#endif
+
 	int (*enable_irq)(struct mdp_info *mdp, uint32_t mask);
 	int (*disable_irq)(struct mdp_info *mdp, uint32_t mask);
-	int (*write_regs)(struct mdp_info *mdp, const struct mdp_reg *reglist, int size);
 };
 
 struct mdp_lcdc_info {
@@ -91,45 +88,9 @@ struct mdp_lcdc_info {
 		uint32_t	hsync_skew;
 		uint32_t	polarity;
 	} parms;
+	atomic_t        blank_count;
+	struct mutex    blank_lock;
 };
-
-struct mdp_dtv_info {
-	struct mdp_info			*mdp;
-	struct clk			*mdp_clk;
-	struct clk			*tv_enc_clk;
-	struct clk			*tv_dac_clk;
-	struct clk			*tv_src_clk;
-	struct clk			*hdmi_clk;
-	struct clk			*mdp_tv_clk;
-	struct msm_panel_data		fb_panel_data;
-	struct platform_device		fb_pdev;
-	struct msm_lcdc_platform_data	*pdata;
-	char				*fb_base;
-	uint32_t fb_start;
-	uint32_t fb_size;
-	bool 				active;
-
-	struct msmfb_callback		frame_start_cb;
-	wait_queue_head_t		vsync_waitq;
-	int				got_vsync;
-	unsigned			color_format;
-	struct {
-		uint32_t	clk_rate;
-		uint32_t	hsync_ctl;
-		uint32_t	vsync_period;
-		uint32_t	vsync_pulse_width;
-		uint32_t	display_hctl;
-		uint32_t	display_vstart;
-		uint32_t	display_vend;
-		uint32_t	hsync_skew;
-		uint32_t	polarity;
-	} parms;
-
-	void (*dtv_relay)(struct mdp_dtv_info *dtv, int on_off);
-	void (*dtv_reconfig_timing)(struct mdp_dtv_info *dtv,
-		struct msm_lcdc_timing *timing, struct msm_fb_data *fb_data);
-};
-
 
 struct panel_icm_info {
 	bool	icm_mode;
@@ -167,11 +128,6 @@ int mdp_wait(struct mdp_info *mdp, uint32_t mask, wait_queue_head_t *wq);
 /* define mdp state for multi purpose */
 #define MDP_STATE_STANDBY		(1 << 0)
 
-#define MDP4_REVISION_V1			0
-#define MDP4_REVISION_V2			1
-#define MDP4_REVISION_V2_1			2
-#define MDP4_REVISION_NONE		0xffffffff
-#define MDP_AXI_RDMASTER_CONFIG		( 0x00028)
 
 #ifdef CONFIG_MSM_MDP302
 #define MDP_SYNC_CONFIG_0                ( 0x00300)
@@ -242,13 +198,6 @@ int mdp_wait(struct mdp_info *mdp, uint32_t mask, wait_queue_head_t *wq);
 #define MDP_MDDI_PARAM_WR_SEL            (0x00090)
 #define MDP_MDDI_PARAM                   (0x00094)
 #define MDP_MDDI_DATA_XFR                (0x00098)
-
-
-#if defined(CONFIG_MSM_MDP40)
-#define MDP_LAYERMIXER_IN_CFG            (0x10100)
-#define MDP_OVERLAYPROC0_CFG             (0x10004)
-#define MDP_OVERLAYPROC1_CFG             (0x18004)
-#endif
 #define MDP_CGC_EN                       (0x00100)
 #define MDP_CMD_STATUS                   (0x10008)
 #define MDP_PROFILE_EN                   (0x10010)
@@ -923,6 +872,7 @@ int mdp_wait(struct mdp_info *mdp, uint32_t mask, wait_queue_head_t *wq);
 #define DMA_PACK_LOOSE 0
 #define DMA_PACK_ALIGN_LSB 0
 #define DMA_PACK_ALIGN_MSB (1<<7)
+#define DMA_PACK_ALIGN_MASK (1<<7)
 #define DMA_PACK_PATTERN_MASK (0x3f<<8)
 #define DMA_PACK_PATTERN_RGB \
 	(MDP_GET_PACK_PATTERN(0, CLR_R, CLR_G, CLR_B, 2)<<8)
@@ -946,25 +896,7 @@ int mdp_wait(struct mdp_info *mdp, uint32_t mask, wait_queue_head_t *wq);
 #define DMA_IBUF_FORMAT_MASK (1 << 20)
 #define DMA_IBUF_NONCONTIGUOUS (1<<21)
 
-#elif defined(CONFIG_MSM_MDP30)
-
-#define DMA_OUT_SEL_AHB  0
-#define DMA_OUT_SEL_MDDI (1<<19)
-#define DMA_AHBM_LCD_SEL_PRIMARY 0
-#define DMA_AHBM_LCD_SEL_SECONDARY (0)
-#define DMA_IBUF_C3ALPHA_EN (0)
-#define DMA_DITHER_EN (1<<24)
-
-#define DMA_MDDI_DMAOUT_LCD_SEL_PRIMARY 0
-#define DMA_MDDI_DMAOUT_LCD_SEL_SECONDARY (0)
-#define DMA_MDDI_DMAOUT_LCD_SEL_EXTERNAL (0)
-
-#define DMA_IBUF_FORMAT_MASK (1 << 20)
-#define DMA_IBUF_FORMAT_RGB565 (1<<25)
-#define DMA_IBUF_FORMAT_RGB888_OR_ARGB8888 (1<<26)
-#define DMA_IBUF_NONCONTIGUOUS (0)
-
-#else /* CONFIG_MSM_MDP31 | CONFIG_MSM_MDP302 */
+#else /* CONFIG_MSM_MDP31 || CONFIG_MSM_MDP40 */
 
 #define DMA_OUT_SEL_AHB				(0 << 19)
 #define DMA_OUT_SEL_MDDI			(1 << 19)

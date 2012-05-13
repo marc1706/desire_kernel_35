@@ -106,7 +106,7 @@ static int kgsl_hex_dump(const char *prefix, int c, uint8_t *data,
 	ss = snprintf(linebuf, sizeof(linebuf), prefix, c);
 	hex_dump_to_buffer(data, linec, rowc, 4, linebuf+ss,
 		sizeof(linebuf)-ss, 0);
-	strncat(linebuf, "\n", sizeof(linebuf));
+	strlcat(linebuf, "\n", sizeof(linebuf));
 	linebuf[sizeof(linebuf)-1] = 0;
 	ss = strlen(linebuf);
 	if (copy_to_user(buff, linebuf, ss+1))
@@ -218,7 +218,7 @@ static int kgsl_regread_nolock(struct kgsl_device *device,
 
 	reg = (unsigned int *)(device->regspace.mmio_virt_base
 				+ (offsetwords << 2));
-	*value = readl(reg);
+	*value = __raw_readl(reg);
 	return 0;
 }
 

@@ -735,7 +735,6 @@ static struct platform_device qsd_device_spi = {
 // KGSL (HW3D support)#include <linux/android_pmem.h>
 ///////////////////////////////////////////////////////////////////////
 
-#if 0
 static int htcleo_kgsl_power_rail_mode(int follow_clk)
 {
 	int mode = follow_clk ? 0 : 1;
@@ -751,7 +750,6 @@ static int htcleo_kgsl_power(bool on)
     	cmd = on ? PCOM_CLK_REGIME_SEC_RAIL_ENABLE : PCOM_CLK_REGIME_SEC_RAIL_DISABLE;
     	return msm_proc_comm(cmd, &rail_id, NULL);
 }
-#endif
 
 /* start kgsl */
 static struct resource kgsl_3d0_resources[] = {
@@ -1101,7 +1099,7 @@ static void __init htcleo_init(void)
 	htcleo_audio_init();
 	
 	msm_device_i2c_init();
-#if 0
+
 	/* set the gpu power rail to manual mode so clk en/dis will not
 	* turn off gpu power, and hang it on resume */
 
@@ -1109,7 +1107,6 @@ static void __init htcleo_init(void)
 	htcleo_kgsl_power(false);
 	mdelay(100);
 	htcleo_kgsl_power(true);
-#endif
 
 	msm_device_uart_dm1.dev.platform_data = &msm_uart_dm1_pdata;
 	msm_device_uart_dm1.name = "msm_serial_hs_bcm"; /* for bcm */
