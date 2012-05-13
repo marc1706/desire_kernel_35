@@ -564,7 +564,7 @@ static char *get_name(struct file *file)
 	return pmem[id].name;
 }
 
-static int is_pmem_file(struct file *file)
+int is_pmem_file(struct file *file)
 {
 	int id;
 
