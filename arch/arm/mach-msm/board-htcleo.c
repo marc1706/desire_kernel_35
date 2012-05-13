@@ -520,27 +520,6 @@ static struct platform_device msm_camera_sensor_s5k3e2fx =
 	},
 };
 
-//-----PATCH for BT mac address
-int is_valid_mac_address(char *mac)
-{
-	int i =0;
-	while(i<17){
-		if( (i%3) == 2){
-			if ((mac[i] !=':') && (mac[i] = '-')) return 0;
-			if (mac[i] == '-') mac[i] = ':';
-		}else{
-			if ( !( ((mac[i] >= '0') && (mac[i] <= '9')) ||
-				((mac[i] >= 'a') && (mac[i] <= 'f')) ||
-				((mac[i] >= 'A') && (mac[i] <= 'F')))
-			) return 0;	
-		}
-		i++;
-	}
-	if (mac[i] != '\0') return 0;
-	return 1;
-}
-//-----------------------------
-
 ///////////////////////////////////////////////////////////////////////
 // bluetooth
 ///////////////////////////////////////////////////////////////////////
@@ -576,72 +555,50 @@ static void parse_tag_bdaddr(void)
 }
 /* end AOSP style interface */
 
-/*
- * export unique BT mac address for Sense ROMs
- * based on code by tytung
- * by marc1706
- */
-#define MAC_ADDRESS_SIZE_C	17
-static char bdaddress[MAC_ADDRESS_SIZE_C+1] = "";
-static void bt_export_bd_address(void)
-{
-	uint32_t id1, id2, sid1, sid2, sid3;
-	uint32_t id_base = 0xef260;
-
-	if (!is_valid_mac_address(bdaddress)){
-		/* read Serial Number SN (IMEI = TAC.SN) */
-		id1 = readl(MSM_SHARED_RAM_BASE + id_base + 0x8);
-		id2 = readl(MSM_SHARED_RAM_BASE + id_base + 0xc);
-		/* Xor SN with TAC (yes only two differents TAC for the HD2 */
-		id1 ^= readl(MSM_SHARED_RAM_BASE + id_base + 0x0);
-		id2 ^= readl(MSM_SHARED_RAM_BASE + id_base + 0x4);
-		/* Xor with CID of operator too further mix the Serial */
-		id1 ^= readl(MSM_SHARED_RAM_BASE + id_base + 0x10);
-		id2 ^= readl(MSM_SHARED_RAM_BASE + id_base + 0x14);
-
-		/* repack the SN part from IMEI (id) into three bytes using low nibbles */
-		sid1 = ((id1 <<  4) & 0xf0) | ((id1 >> 8)  & 0xf);
-		sid2 = ((id1 >> 12) & 0xf0) | ((id1 >> 24) & 0xf);
-		sid3 = ((id2 <<  4) & 0xf0) | ((id2 >> 8)  & 0xf);
-
-		sprintf(bdaddress, "00:23:76:%02x:%02x:%02x", sid3, sid2, sid1);
-		pr_info("BD_ADDRESS=%s\n", bdaddress);
-	}
-}
-
-module_param_string(bdaddress, bdaddress, sizeof(bdaddress), S_IWUSR | S_IRUGO);
-MODULE_PARM_DESC(bdaddress, "BT MAC ADDRESS");
-
-#define MAX_BT_SIZE 0x6U
-static unsigned char bt_bd_ram[MAX_BT_SIZE] = {0x50,0xC3,0x00,0x00,0x00,0x00};
-unsigned char *get_bt_bd_ram(void)
-{
-	return (bt_bd_ram);
-}
-
-//-----added alias for bt mac address parameter--------
-static int __init htcleo_bt_macaddress_setup(char *bootconfig) 
-{
-	printk("%s: cmdline bt mac config=%s | %s\n",__FUNCTION__, bootconfig, __FILE__);
-	strncpy(bdaddress, bootconfig, MAC_ADDRESS_SIZE_C);
-    return 1;
-}
-__setup("bt.mac=", htcleo_bt_macaddress_setup);
-//-----------------------------------------------------
-/* end (sense) */
-
-static struct msm_serial_hs_platform_data msm_uart_dm1_pdata =
-{
-	/* Chip to Device */
-	.rx_wakeup_irq = MSM_GPIO_TO_INT(HTCLEO_GPIO_BT_HOST_WAKE),
+#ifdef CONFIG_SERIAL_MSM_HS
+static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
+	.rx_wakeup_irq = -1,
 	.inject_rx_on_wakeup = 0,
-	.cpu_lock_supported = 0,
+#ifdef CONFIG_SERIAL_BCM_BT_LPM
+	.exit_lpm_cb = bcm_bt_lpm_exit_lpm_locked,
+#endif
+};
 
-	/* for bcm */
-	.bt_wakeup_pin_supported = 1,
-	.bt_wakeup_pin   = HTCLEO_GPIO_BT_CHIP_WAKE,
-	.host_wakeup_pin = HTCLEO_GPIO_BT_HOST_WAKE,
+#ifdef CONFIG_SERIAL_BCM_BT_LPM
+static struct bcm_bt_lpm_platform_data bcm_bt_lpm_pdata = {
+	.gpio_wake = HTCLEO_GPIO_BT_CHIP_WAKE,
+	.gpio_host_wake = HTCLEO_GPIO_BT_HOST_WAKE,
+	.request_clock_off_locked = msm_hs_request_clock_off_locked,
+	.request_clock_on_locked = msm_hs_request_clock_on_locked,
+};
 
+struct platform_device bcm_bt_lpm_device = {
+	.name = "bcm_bt_lpm",
+	.id = 0,
+	.dev = {
+		.platform_data = &bcm_bt_lpm_pdata,
+	},
+};
+#endif
+#endif
+
+static uint32_t bt_gpio_table[] = {
+	PCOM_GPIO_CFG(HTCLEO_GPIO_BT_UART1_RTS, 2, GPIO_OUTPUT,
+		      GPIO_PULL_UP, GPIO_8MA),
+	PCOM_GPIO_CFG(HTCLEO_GPIO_BT_UART1_CTS, 2, GPIO_INPUT,
+		      GPIO_PULL_UP, GPIO_8MA),
+	PCOM_GPIO_CFG(HTCLEO_GPIO_BT_UART1_RX, 2, GPIO_INPUT,
+		      GPIO_PULL_UP, GPIO_8MA),
+	PCOM_GPIO_CFG(HTCLEO_GPIO_BT_UART1_TX, 2, GPIO_OUTPUT,
+		      GPIO_PULL_UP, GPIO_8MA),
+	PCOM_GPIO_CFG(HTCLEO_GPIO_BT_RESET_N, 0, GPIO_OUTPUT,
+		      GPIO_PULL_DOWN, GPIO_4MA),
+	PCOM_GPIO_CFG(HTCLEO_GPIO_BT_SHUTDOWN_N, 0, GPIO_OUTPUT,
+		      GPIO_PULL_DOWN, GPIO_4MA),
+	PCOM_GPIO_CFG(HTCLEO_GPIO_BT_CHIP_WAKE, 0, GPIO_OUTPUT,
+		      GPIO_PULL_DOWN, GPIO_4MA),
+	PCOM_GPIO_CFG(HTCLEO_GPIO_BT_HOST_WAKE, 0, GPIO_INPUT,
+		      GPIO_PULL_DOWN, GPIO_4MA),
 };
 
 static struct platform_device htcleo_rfkill =
@@ -949,6 +906,9 @@ static struct platform_device *devices[] __initdata =
 #if !defined(CONFIG_MSM_SERIAL_DEBUGGER)
 	&msm_device_uart1,
 #endif
+#ifdef CONFIG_SERIAL_BCM_BT_LPM
+	&bcm_bt_lpm_device,
+#endif
 	&msm_device_uart_dm1,
 	&htcleo_rfkill,
 	&qsd_device_spi,
@@ -1093,9 +1053,16 @@ static void __init htcleo_init(void)
 
 	init_dex_comm();
 
+#ifdef CONFIG_SERIAL_MSM_HS
+	msm_device_uart_dm1.dev.platform_data = &msm_uart_dm1_pdata;
+	msm_device_uart_dm1.name = "msm_serial_hs"; /* for bcm */
+	msm_device_uart_dm1.resource[3].end = 6;
+#endif
+
+	config_gpio_table(bt_gpio_table, ARRAY_SIZE(bt_gpio_table));
+
 	parse_tag_bdaddr();
 
-	bt_export_bd_address();
 	htcleo_audio_init();
 	
 	msm_device_i2c_init();
@@ -1107,10 +1074,6 @@ static void __init htcleo_init(void)
 	htcleo_kgsl_power(false);
 	mdelay(100);
 	htcleo_kgsl_power(true);
-
-	msm_device_uart_dm1.dev.platform_data = &msm_uart_dm1_pdata;
-	msm_device_uart_dm1.name = "msm_serial_hs_bcm"; /* for bcm */
-    	msm_device_uart_dm1.resource[3].end = 6;
 
 	platform_add_devices(devices, ARRAY_SIZE(devices));
 
