@@ -1060,6 +1060,13 @@ static int pc_clk_is_enabled(uint32_t id)
 	return is_enabled;
 }
 
+long pc_clk_round_rate(unsigned id, unsigned rate)
+{
+
+	/* Not really supported; pc_clk_set_rate() does rounding on it's own. */
+	return rate;
+}
+
 static int pc_pll_request(unsigned id, unsigned on)
 {
 	if(debug_mask&DEBUG_UNKNOWN_CMD)
@@ -1175,6 +1182,12 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
 	return pc_clk_set_rate(clk->id, rate);
 }
 EXPORT_SYMBOL(clk_set_rate);
+
+long clk_round_rate(struct clk *clk, unsigned long rate)
+{
+	return clk->ops->round_rate(clk->id, rate);
+}
+EXPORT_SYMBOL(clk_round_rate);
 
 int clk_set_parent(struct clk *clk, struct clk *parent)
 {
@@ -1329,5 +1342,5 @@ struct clk_ops clk_ops_pcom = {
 	.set_flags = pc_clk_set_flags,
 	.get_rate = pc_clk_get_rate,
 	.is_enabled = pc_clk_is_enabled,
-//	.round_rate = pc_clk_round_rate,
+	.round_rate = pc_clk_round_rate,
 };
