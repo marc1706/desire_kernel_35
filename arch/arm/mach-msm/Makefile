@@ -126,6 +126,7 @@ obj-$(CONFIG_MSM_SMD) += smd_tty.o
 ifdef CONFIG_MACH_HTCLEO
 obj-$(CONFIG_MSM_SMD) += smd_qmi_wince.o
 obj-y += clock-wince.o
+obj-y += footswitch-pcom.o
 else
 obj-$(CONFIG_MSM_SMD) += smd_qmi.o
 obj-y += clock-pcom.o

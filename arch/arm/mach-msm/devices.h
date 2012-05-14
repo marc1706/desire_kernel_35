@@ -107,6 +107,7 @@ extern struct platform_device msm_device_vidc_720p;
 extern struct platform_device qsdnew_device_spi;
 #endif
 extern struct platform_device *msm_footswitch_devices[];
+extern struct platform_device msm_footswitch;
 extern unsigned msm_num_footswitch_devices;
 
 extern struct clk msm_clocks_7x01a[];
