@@ -813,8 +813,8 @@ static struct platform_device android_pmem_venc_device = {
 
 static struct resource ram_console_resources[] = {
 	{
-		.start	= MSM_RAM_CONSOLE_BASE,
-		.end	= MSM_RAM_CONSOLE_BASE + MSM_RAM_CONSOLE_SIZE - 1,
+		.start	= (resource_size_t) MSM_RAM_CONSOLE_BASE,
+		.end	= (resource_size_t) (MSM_RAM_CONSOLE_BASE + MSM_RAM_CONSOLE_SIZE - 1),
 		.flags	= IORESOURCE_MEM,
 	},
 };
