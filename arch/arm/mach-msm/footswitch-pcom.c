@@ -160,7 +160,7 @@ static struct regulator_ops footswitch_ops = {
 	.disable = footswitch_disable,
 };
 
-#define FOOTSWITCH(_id, _pcom_id, _name, _src_clk, _rate, _ahb_clk) \
+#define FOOTSWITCH(_id, _pcom_id, _name, _src_clk, _rate, _ahb_clk, _is_manual) \
 	[_id] = { \
 		.desc = { \
 			.id = _id, \
@@ -173,22 +173,23 @@ static struct regulator_ops footswitch_ops = {
 		.has_src_clk = _src_clk, \
 		.src_clk_init_rate = _rate, \
 		.has_ahb_clk = _ahb_clk, \
+		.is_manual = _is_manual, \
 	}
 static struct footswitch footswitches[] = {
 	FOOTSWITCH(FS_GFX3D,  PCOM_FS_GRP,
-		"fs_gfx3d",   true, 24576000, true),
+		"fs_gfx3d",   true, 24576000, true, true),
 	FOOTSWITCH(FS_GFX2D0, PCOM_FS_GRP_2D,
-		"fs_gfx2d0", false, 24576000, true),
+		"fs_gfx2d0", false, 24576000, true, true),
 	FOOTSWITCH(FS_MDP,    PCOM_FS_MDP,
-		"fs_mdp",    false, 24576000, true),
+		"fs_mdp",    false, 24576000, true, true),
 	FOOTSWITCH(FS_MFC,    PCOM_FS_MFC,
-		"fs_mfc",    false, 24576000, true),
+		"fs_mfc",    false, 24576000, true, true),
 	FOOTSWITCH(FS_ROT,    PCOM_FS_ROTATOR,
-		"fs_rot",    false,        0, true),
+		"fs_rot",    false,        0, true, true),
 	FOOTSWITCH(FS_VFE,    PCOM_FS_VFE,
-		"fs_vfe",    false, 24576000, true),
+		"fs_vfe",    false, 24576000, true, true),
 	FOOTSWITCH(FS_VPE,    PCOM_FS_VPE,
-		"fs_vpe",    false, 24576000, false),
+		"fs_vpe",    false, 24576000, false, true),
 };
 
 static int get_clocks(struct device *dev, struct footswitch *fs)
