@@ -21,6 +21,7 @@
 #include <linux/vmalloc.h>
 #include <linux/pm_runtime.h>
 #include <linux/genlock.h>
+#include <linux/pm_qos_params.h>
 
 #include <linux/ashmem.h>
 #include <linux/major.h>
@@ -44,6 +45,8 @@ MODULE_PARM_DESC(kgsl_pagetable_count,
 module_param_named(mmutype, ksgl_mmu_type, charp, 0);
 MODULE_PARM_DESC(ksgl_mmu_type,
 "Type of MMU to be used for graphics. Valid values are 'iommu' or 'gpummu' or 'nommu'");
+
+struct pm_qos_request_list *kgsl_pm_qos_req;
 
 #ifdef CONFIG_GENLOCK
 
@@ -2062,8 +2065,8 @@ void kgsl_unregister_device(struct kgsl_device *device)
 	kgsl_cffdump_close(device->id);
 	kgsl_pwrctrl_uninit_sysfs(device);
 
-	if (cpu_is_msm8x60())
-		wake_lock_destroy(&device->idle_wakelock);
+	wake_lock_destroy(&device->idle_wakelock);
+	pm_qos_remove_request(kgsl_pm_qos_req);
 
 	idr_destroy(&device->context_idr);
 
@@ -2155,9 +2158,9 @@ kgsl_register_device(struct kgsl_device *device)
 	if (ret != 0)
 		goto err_close_mmu;
 
-	if (cpu_is_msm8x60())
-		wake_lock_init(&device->idle_wakelock,
-					   WAKE_LOCK_IDLE, device->name);
+	wake_lock_init(&device->idle_wakelock, WAKE_LOCK_IDLE, device->name);
+	kgsl_pm_qos_req = pm_qos_add_request(PM_QOS_CPU_DMA_LATENCY,
+				PM_QOS_DEFAULT_VALUE);
 
 	idr_init(&device->context_idr);
 
