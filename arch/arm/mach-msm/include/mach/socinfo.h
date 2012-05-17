@@ -135,4 +135,10 @@ static inline int cpu_is_msm8960(void)
 	BUG_ON(cpu == MSM_CPU_UNKNOWN);
 	return cpu == MSM_CPU_8960;
 }
+
+static inline int cpu_is_msm8930(void)
+{
+	/* not implemented */
+	return 0;
+}
 #endif
