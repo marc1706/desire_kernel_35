@@ -66,74 +66,114 @@ int __init socinfo_init(void) __must_check;
 
 static inline int cpu_is_msm7x01(void)
 {
+#ifdef CONFIG_ARCH_MSM7X01A
 	enum msm_cpu cpu = socinfo_get_msm_cpu();
 
 	BUG_ON(cpu == MSM_CPU_UNKNOWN);
 	return cpu == MSM_CPU_7X01;
+#else
+	return 0;
+#endif
 }
 
 static inline int cpu_is_msm7x25(void)
 {
+#ifdef CONFIG_ARCH_MSM7x25
 	enum msm_cpu cpu = socinfo_get_msm_cpu();
 
 	BUG_ON(cpu == MSM_CPU_UNKNOWN);
 	return cpu == MSM_CPU_7X25;
+#else
+	return 0;
+#endif
 }
 
 static inline int cpu_is_msm7x27(void)
 {
+#ifdef CONFIG_ARCH_MSM7X27
 	enum msm_cpu cpu = socinfo_get_msm_cpu();
 
 	BUG_ON(cpu == MSM_CPU_UNKNOWN);
 	return cpu == MSM_CPU_7X27;
+#else
+	return 0;
+#endif
 }
 
 static inline int cpu_is_msm7x27a(void)
 {
+#ifdef CONFIG_ARCH_MSM7X27A
 	enum msm_cpu cpu = socinfo_get_msm_cpu();
 
 	BUG_ON(cpu == MSM_CPU_UNKNOWN);
 	return cpu == MSM_CPU_7X27A;
+#else
+	return 0;
+#endif
 }
 
 static inline int cpu_is_msm7x30(void)
 {
+#ifdef CONFIG_ARCH_MSM7X30
 	enum msm_cpu cpu = socinfo_get_msm_cpu();
 
 	BUG_ON(cpu == MSM_CPU_UNKNOWN);
 	return cpu == MSM_CPU_7X30;
+#else
+	return 0;
+#endif
 }
 
 static inline int cpu_is_qsd8x50(void)
 {
+#ifdef CONFIG_ARCH_QSD8X50
+#ifdef CONFIG_MACH_HTCLEO
+	return 1;
+#else
 	enum msm_cpu cpu = socinfo_get_msm_cpu();
 
 	BUG_ON(cpu == MSM_CPU_UNKNOWN);
 	return cpu == MSM_CPU_8X50;
+#endif
+#else
+	return 0;
+#endif
 }
 
 static inline int cpu_is_msm8x55(void)
 {
+#ifdef CONFIG_ARCH_MSM7X30
 	enum msm_cpu cpu = socinfo_get_msm_cpu();
 
 	BUG_ON(cpu == MSM_CPU_UNKNOWN);
 	return cpu == MSM_CPU_8X55;
+#else
+	return 0;
+#endif
 }
 
 static inline int cpu_is_msm8x60(void)
 {
+#ifdef CONFIG_ARCH_MSM8X60
 	enum msm_cpu cpu = socinfo_get_msm_cpu();
 
 	BUG_ON(cpu == MSM_CPU_UNKNOWN);
 	return cpu == MSM_CPU_8X60;
+#else
+	return 0;
+#endif
 }
 
 static inline int cpu_is_msm8960(void)
 {
+#ifdef CONFIG_ARCH_MSM8960
 	enum msm_cpu cpu = socinfo_get_msm_cpu();
 
 	BUG_ON(cpu == MSM_CPU_UNKNOWN);
 	return cpu == MSM_CPU_8960;
+#else
+	return 0;
+#endif
 }
 
 static inline int cpu_is_msm8930(void)
