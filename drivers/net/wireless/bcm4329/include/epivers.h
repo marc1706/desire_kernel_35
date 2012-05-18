@@ -39,7 +39,7 @@
 
 #define	EPI_VERSION		4, 218, 248, 20
 
-#define	EPI_VERSION_NUM		0x04daf812
+#define	EPI_VERSION_NUM		0x04daf814
 
 
 #define	EPI_VERSION_STR		"4.218.248.20"
