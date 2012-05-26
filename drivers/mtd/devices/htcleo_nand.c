@@ -39,6 +39,7 @@
 #include <asm/mach/flash.h>
 
 #include <mach/dma.h>
+#include <mach/board-htcleo-mac.h>
 
 unsigned crci_mask;
 
@@ -1831,6 +1832,59 @@ static int param_get_page_size(char *buffer, struct kernel_param *kp)
 module_param_call(pagesize, NULL, param_get_page_size, NULL, S_IRUGO);
 
 /**
+ * scanmac - Scan for HTC Leo mac addresses
+ * 
+ * @author: Franck78, Rick_1995, marc1706
+ */
+void scanmac(struct mtd_info *mtd)
+{
+	unsigned char *iobuf;
+	int ret;
+	loff_t addr;
+	struct mtd_oob_ops ops;
+
+	iobuf = kmalloc(2048/*mtd->erasesize*/, GFP_KERNEL);
+	if (!iobuf) {
+		printk("%s: error: cannot allocate memory\n",__func__);
+		return;
+	}
+
+	ops.mode   = MTD_OOB_PLACE;
+	ops.len    = 2048;
+	ops.datbuf = iobuf;
+	ops.ooblen = 0;
+	ops.oobbuf = NULL;
+	ops.retlen = 0;
+
+	addr = ((loff_t) 505*0x20000);
+	ret = msm_nand_read_oob(mtd, addr, &ops);
+	if (ret == -EUCLEAN)
+		ret = 0;
+	if (ret || ops.retlen != 2048 ) {
+		printk("%s: error: read(%d) failed at %#llx\n",__func__,ops.retlen, addr);
+		goto out;
+	}
+	sprintf(nvs_mac_addr, "macaddr=%02x:%02x:%02x:%02x:%02x:%02x\n",iobuf[40],iobuf[41],iobuf[42],iobuf[43],iobuf[44],iobuf[45]);
+	pr_info("Device WiFi MAC Address: %s\n", nvs_mac_addr);
+
+	addr = ((loff_t) 505*0x20000 + 6*0x800);
+	ret = msm_nand_read_oob(mtd, addr, &ops);
+	if (ret == -EUCLEAN)
+		ret = 0;
+	if (ret || ops.retlen != 2048 ) {
+		printk("%s: error: read(%d) failed at %#llx\n",__func__,ops.retlen, addr);
+		goto out;
+	}
+	sprintf(bdaddr, "%02x:%02x:%02x:%02x:%02x:%02x",iobuf[5],iobuf[4],iobuf[3],iobuf[2],iobuf[1],iobuf[0]);
+	pr_info("Device Bluetooth MAC Address: %s\n", bdaddr);
+	ret = 0;
+out:
+	kfree(iobuf);
+	if (ret) printk("Find MAC Error %d occurred\n", ret);
+	return;
+}
+
+/**
 * msm_nand_scan - [msm_nand Interface] Scan for the msm_nand device
 * @param mtd	   MTD device structure
 * @param maxchips  Number of chips to scan for
@@ -1995,6 +2049,7 @@ int msm_nand_scan(struct mtd_info *mtd, int maxchips)
 	/* msm_nand_unlock_all(mtd); */
 
 	/* return this->scan_bbt(mtd); */
+	scanmac(mtd);
 
 #if VERBOSE
 	for (i=0;i<nand_info->block_count;i++)
