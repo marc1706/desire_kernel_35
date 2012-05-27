@@ -56,6 +56,7 @@
 #include <mach/htc_headset_mgr.h>
 #include <mach/htc_headset_gpio.h>
 
+#include <mach/board-htcleo-mac.h>
 #include <mach/board-htcleo-microp.h>
 #include <mach/board-htcleo-ts.h>
 
@@ -545,43 +546,23 @@ int is_valid_mac_address(char *mac)
 ///////////////////////////////////////////////////////////////////////
 
 /* AOSP style interface */
-#define BDADDR_STR_SIZE 18
-static char bdaddr[BDADDR_STR_SIZE];
+
+/*
+ * bluetooth mac address will be parsed in msm_nand_probe
+ * see drivers/mtd/devices/htcleo_nand.c
+ */
+char bdaddr[BDADDR_STR_SIZE];
 
 module_param_string(bdaddr, bdaddr, sizeof(bdaddr), 0400);
 MODULE_PARM_DESC(bdaddr, "bluetooth address");
-
-static void parse_tag_bdaddr(void)
-{
-	uint32_t id1, id2, sid1, sid2, sid3;
-	uint32_t id_base = 0xef260;
-	/* read Serial Number SN (IMEI = TAC.SN) */
-	id1 = readl(MSM_SHARED_RAM_BASE + id_base + 0x8);
-	id2 = readl(MSM_SHARED_RAM_BASE + id_base + 0xc);
-	/* Xor SN with TAC (yes only two differents TAC for the HD2 */
-	id1 ^= readl(MSM_SHARED_RAM_BASE + id_base + 0x0);
-	id2 ^= readl(MSM_SHARED_RAM_BASE + id_base + 0x4);
-	/* Xor with CID of operator too further mix the Serial */
-	id1 ^= readl(MSM_SHARED_RAM_BASE + id_base + 0x10);
-	id2 ^= readl(MSM_SHARED_RAM_BASE + id_base + 0x14);
-
-	/* repack the SN part from IMEI (id) into three bytes using low nibbles */
-	sid1 = ((id1 <<  4) & 0xf0) | ((id1 >> 8)  & 0xf);
-	sid2 = ((id1 >> 12) & 0xf0) | ((id1 >> 24) & 0xf);
-	sid3 = ((id2 <<  4) & 0xf0) | ((id2 >> 8)  & 0xf);
-
-	sprintf(bdaddr, "00:23:76:%02x:%02x:%02x", sid3, sid2, sid1);
-	pr_info("Device Bluetooth MAC Address: %s\n", bdaddr);
-}
 /* end AOSP style interface */
 
 /*
- * export unique BT mac address for Sense ROMs
- * based on code by tytung
+ * export correct bt mac to sense roms
  * by marc1706
  */
-#define MAC_ADDRESS_SIZE_C	17
-static char bdaddress[MAC_ADDRESS_SIZE_C+1] = "";
+char bdaddress[BDADDR_STR_SIZE] = "";
+#if 0
 static void bt_export_bd_address(void)
 {
 	uint32_t id1, id2, sid1, sid2, sid3;
@@ -607,6 +588,7 @@ static void bt_export_bd_address(void)
 		pr_info("BD_ADDRESS=%s\n", bdaddress);
 	}
 }
+#endif
 
 module_param_string(bdaddress, bdaddress, sizeof(bdaddress), S_IWUSR | S_IRUGO);
 MODULE_PARM_DESC(bdaddress, "BT MAC ADDRESS");
@@ -622,7 +604,7 @@ unsigned char *get_bt_bd_ram(void)
 static int __init htcleo_bt_macaddress_setup(char *bootconfig) 
 {
 	printk("%s: cmdline bt mac config=%s | %s\n",__FUNCTION__, bootconfig, __FILE__);
-	strncpy(bdaddress, bootconfig, MAC_ADDRESS_SIZE_C);
+	strncpy(bdaddress, bootconfig, BDADDR_STR_SIZE-1);
     return 1;
 }
 __setup("bt.mac=", htcleo_bt_macaddress_setup);
@@ -1068,9 +1050,6 @@ static void __init htcleo_init(void)
 
 	init_dex_comm();
 
-	parse_tag_bdaddr();
-
-	bt_export_bd_address();
 	htcleo_audio_init();
 	
 	msm_device_i2c_init();
