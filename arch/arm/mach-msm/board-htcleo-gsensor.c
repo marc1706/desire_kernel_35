@@ -37,6 +37,8 @@ static struct bma150_platform_data *this_pdata;
 
 static struct mutex gsensor_RW_mutex;
 static struct mutex gsensor_set_mode_mutex;
+/* define device mode */
+static atomic_t Bma150ForceMode_flag = ATOMIC_INIT(0);
 
 static atomic_t PhoneOn_flag = ATOMIC_INIT(0);
 static atomic_t Disable_flag = ATOMIC_INIT(0);
@@ -240,6 +242,10 @@ static int __spi_bma150_set_mode(char mode)
 
 	if (atomic_read(&Disable_flag) == 1)
 		mode = BMA_MODE_SLEEP;
+	
+	/* force BMA_MODE_NORMAL */
+	if (atomic_read(&Bma150ForceMode_flag) == 1)
+		mode = BMA_MODE_NORMAL;
 
 	mutex_lock(&gsensor_set_mode_mutex);
 	if (mode == BMA_MODE_NORMAL) {
@@ -493,6 +499,46 @@ static int bma150_resume(struct device *device)
 }
 #endif /* EARLY_SUSPEND_BMA */
 
+/* get the gsensor force mode */
+static ssize_t spi_bma150_force_show(struct device *dev,
+				      struct device_attribute *attr,
+				      const char *buf)
+{
+	char *s = buf;
+	s += sprintf(s, "%d\n", atomic_read(&Bma150ForceMode_flag));
+	
+	return (s - buf);
+}
+
+/* force the gsensor mode */
+static ssize_t spi_bma150_force_store(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+	char *s = buf;
+	int ret = 0;
+
+	if (count == (strlen("enable") + 1) &&
+	   strncmp(buf, "enable", strlen("enable")) == 0) {
+		atomic_set(&Bma150ForceMode_flag, 1);
+		printk(KERN_DEBUG "spi_bma150_force_store: ForceMode_flag=%d\n", atomic_read(&Bma150ForceMode_flag));
+		/* set the mode to BMA_MODE_NORMAL */
+		ret = __spi_bma150_set_mode(BMA_MODE_NORMAL);
+		return count;
+	}
+	if (count == (strlen("disable") + 1) &&
+	   strncmp(buf, "disable", strlen("disable")) == 0) {
+		atomic_set(&Bma150ForceMode_flag, 0);
+		printk(KERN_DEBUG "spi_bma150_force_store: ForceMode_flag=%d\n", atomic_read(&Bma150ForceMode_flag));
+		return count;
+	}
+	E("spi_bma150_force_store: invalid argument\n");
+	return -EINVAL;
+}
+
+static DEVICE_ACCESSORY_ATTR(ForceModeFlag, 0664, \
+	spi_bma150_force_show, spi_bma150_force_store);
+
 static ssize_t spi_bma150_show(struct device *dev,
 				  struct device_attribute *attr, char *buf)
 {
@@ -650,6 +696,11 @@ int spi_bma150_registerAttr(void)
 	if (ret)
 		goto err_create_accelerometer_debug_en_device_file;
 
+	/* register the ForceModeFlag attributes */
+	ret = device_create_file(accelerometer_dev, &dev_attr_ForceModeFlag);
+	if (ret)
+		goto err_create_accelerometer_device_force_mode;
+
 	/* register the attributes */
 	ret = device_create_file(disable_dev, &dev_attr_Disable_flag);
 	if (ret)
@@ -657,6 +708,8 @@ int spi_bma150_registerAttr(void)
 
 	return 0;
 
+err_create_accelerometer_device_force_mode:
+	device_remove_file(accelerometer_dev, &dev_attr_ForceModeFlag);
 err_create_disable_device_file:
 	device_remove_file(accelerometer_dev, &dev_attr_debug_en);
 err_create_accelerometer_debug_en_device_file:
