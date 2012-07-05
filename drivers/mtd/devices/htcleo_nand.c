@@ -182,6 +182,11 @@ static void *msm_nand_get_dma_buffer(struct msm_nand_chip *chip, size_t size)
 	do {
 		free_index = __ffs(free_bitmask);
 		current_need_mask = need_mask << free_index;
+
+		if (size + free_index * MSM_NAND_DMA_BUFFER_SLOTS >=
+						MSM_NAND_DMA_BUFFER_SIZE)
+			return NULL;
+
 		if ((bitmask & current_need_mask) == 0) {
 			old_bitmask =
 				atomic_cmpxchg(&chip->dma_buffer_busy,
@@ -350,7 +355,7 @@ unsigned flash_rd_reg(struct msm_nand_chip *chip, unsigned addr)
 
 	dsb();
 	msm_dmov_exec_cmd(
-		chip->dma_channel,crci_mask, DMOV_CMD_PTR_LIST |
+		chip->dma_channel, crci_mask, DMOV_CMD_PTR_LIST |
 		DMOV_CMD_ADDR(msm_virt_to_dma(chip, &dma_buffer->cmdptr)));
 	dsb();
 	rv = dma_buffer->data;
@@ -1849,8 +1854,8 @@ void scanmac(struct mtd_info *mtd)
 		return;
 	}
 
-	ops.mode   = MTD_OOB_PLACE;
-	ops.len    = 2048;
+	ops.mode = MTD_OOB_PLACE;
+	ops.len = 2048;
 	ops.datbuf = iobuf;
 	ops.ooblen = 0;
 	ops.oobbuf = NULL;
@@ -1861,10 +1866,12 @@ void scanmac(struct mtd_info *mtd)
 	if (ret == -EUCLEAN)
 		ret = 0;
 	if (ret || ops.retlen != 2048 ) {
-		printk("%s: error: read(%d) failed at %#llx\n",__func__,ops.retlen, addr);
+		printk("%s: error: read(%d) failed at %#llx\n",__func__,
+		       ops.retlen, addr);
 		goto out;
 	}
-	sprintf(nvs_mac_addr, "macaddr=%02x:%02x:%02x:%02x:%02x:%02x\n",iobuf[40],iobuf[41],iobuf[42],iobuf[43],iobuf[44],iobuf[45]);
+	sprintf(nvs_mac_addr, "macaddr=%02x:%02x:%02x:%02x:%02x:%02x\n",
+		iobuf[40],iobuf[41],iobuf[42],iobuf[43],iobuf[44],iobuf[45]);
 	pr_info("Device WiFi MAC Address: %s\n", nvs_mac_addr);
 
 	addr = ((loff_t) 505*0x20000 + 6*0x800);
@@ -1872,12 +1879,15 @@ void scanmac(struct mtd_info *mtd)
 	if (ret == -EUCLEAN)
 		ret = 0;
 	if (ret || ops.retlen != 2048 ) {
-		printk("%s: error: read(%d) failed at %#llx\n",__func__,ops.retlen, addr);
+		printk("%s: error: read(%d) failed at %#llx\n",__func__,
+		       ops.retlen, addr);
 		goto out;
 	}
-	sprintf(bdaddr, "%02x:%02x:%02x:%02x:%02x:%02x",iobuf[5],iobuf[4],iobuf[3],iobuf[2],iobuf[1],iobuf[0]);
+	sprintf(bdaddr, "%02x:%02x:%02x:%02x:%02x:%02x",iobuf[5],iobuf[4],
+		iobuf[3],iobuf[2],iobuf[1],iobuf[0]);
 	pr_info("Device Bluetooth MAC Address: %s\n", bdaddr);
 	ret = 0;
+
 out:
 	kfree(iobuf);
 	if (ret) printk("Find MAC Error %d occurred\n", ret);
@@ -2101,16 +2111,6 @@ struct msm_nand_info {
 	struct msm_nand_chip	msm_nand;
 };
 
-#ifdef CONFIG_MTD_PARTITIONS
-const struct mtd_partition mac_nand_partition_info[] = {
-	[0]{
-		.name	= "mac",
-		.offset	= 0x03f20000,
-		.size	= 0x00020000,
-	},
-};
-#endif
-
 static int __devinit msm_nand_probe(struct platform_device *pdev)
 {
 	struct msm_nand_info *info;
@@ -2170,10 +2170,8 @@ static int __devinit msm_nand_probe(struct platform_device *pdev)
 	err = parse_mtd_partitions(&info->mtd, part_probes, &info->parts, 0);
 	if (err > 0)
 		add_mtd_partitions(&info->mtd, info->parts, err);
-	else if (err <= 0 && pdata && pdata->parts) {
+	else if (err <= 0 && pdata && pdata->parts)
 		add_mtd_partitions(&info->mtd, pdata->parts, pdata->nr_parts);
-		add_mtd_partitions(&info->mtd, mac_nand_partition_info, 1);
-	}
 	else
 #endif
 		err = add_mtd_device(&info->mtd);
