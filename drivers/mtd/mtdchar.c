@@ -135,7 +135,7 @@ static int mtd_close(struct inode *inode, struct file *file)
 /* FIXME: This _really_ needs to die. In 2.5, we should lock the
    userspace buffer down and use it directly with readv/writev.
 */
-#define MAX_KMALLOC_SIZE 0x8000
+#define MAX_KMALLOC_SIZE 0x20000
 
 static ssize_t mtd_read(struct file *file, char __user *buf, size_t count,loff_t *ppos)
 {
