@@ -1916,7 +1916,9 @@ CONFIG_ANDROID_LOW_MEMORY_KILLER=y
 # RAR Register Driver
 #
 # CONFIG_IIO is not set
+CONFIG_XVMALLOC=y
 CONFIG_ZRAM=m
+# CONFIG_ZRAM_DEBUG is not set
 # CONFIG_BATMAN_ADV is not set
 # CONFIG_FB_SM7XX is not set
 
