@@ -15,6 +15,10 @@
 #define KMSG_COMPONENT "zram"
 #define pr_fmt(fmt) KMSG_COMPONENT ": " fmt
 
+#ifdef CONFIG_ZRAM_DEBUG
+#define DEBUG
+#endif
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/bio.h>
@@ -200,7 +204,7 @@ static void handle_uncompressed_page(struct zram *zram,
 	flush_dcache_page(page);
 }
 
-static int zram_read(struct zram *zram, struct bio *bio)
+static void zram_read(struct zram *zram, struct bio *bio)
 {
 
 	int i;
@@ -208,9 +212,8 @@ static int zram_read(struct zram *zram, struct bio *bio)
 	struct bio_vec *bvec;
 
 	if (unlikely(!zram->init_done)) {
-		set_bit(BIO_UPTODATE, &bio->bi_flags);
-		bio_endio(bio, 0);
-		return 0;
+		bio_endio(bio, -ENXIO);
+		return;
 	}
 
 	zram_stat64_inc(zram, &zram->stats.num_reads);
@@ -275,14 +278,13 @@ static int zram_read(struct zram *zram, struct bio *bio)
 
 	set_bit(BIO_UPTODATE, &bio->bi_flags);
 	bio_endio(bio, 0);
-	return 0;
+	return;
 
 out:
 	bio_io_error(bio);
-	return 0;
 }
 
-static int zram_write(struct zram *zram, struct bio *bio)
+static void zram_write(struct zram *zram, struct bio *bio)
 {
 	int i, ret;
 	u32 index;
@@ -407,11 +409,10 @@ memstore:
 
 	set_bit(BIO_UPTODATE, &bio->bi_flags);
 	bio_endio(bio, 0);
-	return 0;
+	return;
 
 out:
 	bio_io_error(bio);
-	return 0;
 }
 
 /*
@@ -436,7 +437,6 @@ static inline int valid_io_request(struct zram *zram, struct bio *bio)
  */
 static int zram_make_request(struct request_queue *queue, struct bio *bio)
 {
-	int ret = 0;
 	struct zram *zram = queue->queuedata;
 
 	if (!valid_io_request(zram, bio)) {
@@ -447,15 +447,15 @@ static int zram_make_request(struct request_queue *queue, struct bio *bio)
 
 	switch (bio_data_dir(bio)) {
 	case READ:
-		ret = zram_read(zram, bio);
+		zram_read(zram, bio);
 		break;
 
 	case WRITE:
-		ret = zram_write(zram, bio);
+		zram_write(zram, bio);
 		break;
 	}
 
-	return ret;
+	return 0;
 }
 
 void zram_reset_device(struct zram *zram)
@@ -624,20 +624,19 @@ static int create_device(struct zram *zram, int device_id)
 	 * and n*PAGE_SIZED sized I/O requests.
 	 */
 	blk_queue_physical_block_size(zram->disk->queue, PAGE_SIZE);
-	blk_queue_logical_block_size(zram->disk->queue, PAGE_SIZE);
+	blk_queue_logical_block_size(zram->disk->queue,
+					ZRAM_LOGICAL_BLOCK_SIZE);
 	blk_queue_io_min(zram->disk->queue, PAGE_SIZE);
 	blk_queue_io_opt(zram->disk->queue, PAGE_SIZE);
 
 	add_disk(zram->disk);
 
-#ifdef CONFIG_SYSFS
 	ret = sysfs_create_group(&disk_to_dev(zram->disk)->kobj,
 				&zram_disk_attr_group);
 	if (ret < 0) {
 		pr_warning("Error creating sysfs group");
 		goto out;
 	}
-#endif
 
 	zram->init_done = 0;
 
@@ -647,10 +646,8 @@ out:
 
 static void destroy_device(struct zram *zram)
 {
-#ifdef CONFIG_SYSFS
 	sysfs_remove_group(&disk_to_dev(zram->disk)->kobj,
 			&zram_disk_attr_group);
-#endif
 
 	if (zram->disk) {
 		del_gendisk(zram->disk);
