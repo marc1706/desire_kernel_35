@@ -44,6 +44,12 @@ extern void error(char *);
 #include "../../../../lib/decompress_unlzma.c"
 #endif
 
+#ifdef CONFIG_KERNEL_XZ
+#define memmove memmove
+#define memcpy memcpy
+#include "../../../../lib/decompress_unxz.c"
+#endif
+
 void do_decompress(u8 *input, int len, u8 *output, void (*error)(char *x))
 {
 	decompress(input, len, NULL, NULL, output, NULL, error);
