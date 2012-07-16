@@ -55,17 +55,15 @@ suspend_state_t requested_suspend_state = PM_SUSPEND_MEM;
 static struct wake_lock unknown_wakeup;
 static struct wake_lock suspend_backoff_lock;
 
-#define SUSPEND_BACKOFF_FAILURES	10
-#define SUSPEND_BACKOFF_INTERVAL	5000
+#define SUSPEND_BACKOFF_THRESHOLD	10
+#define SUSPEND_BACKOFF_INTERVAL	10000
 
-static unsigned suspend_backoff_count;
-static unsigned suspend_fail_count;
+static unsigned suspend_short_count;
 
 #ifdef CONFIG_WAKELOCK_STAT
 static struct wake_lock deleted_wake_locks;
 static ktime_t last_sleep_time_update;
 static int wait_for_wakeup;
-
 
 int get_expired_time(struct wake_lock *lock, ktime_t *expire_time)
 {
@@ -266,7 +264,7 @@ long has_wake_lock(int type)
 	unsigned long irqflags;
 	spin_lock_irqsave(&list_lock, irqflags);
 	ret = has_wake_lock_locked(type);
-	if (ret && (debug_mask & DEBUG_SUSPEND) && type == WAKE_LOCK_SUSPEND)
+	if (ret && (debug_mask & DEBUG_WAKEUP) && type == WAKE_LOCK_SUSPEND)
 		print_active_locks(type);
 	spin_unlock_irqrestore(&list_lock, irqflags);
 	return ret;
@@ -344,10 +342,8 @@ int suspend_sys_sync_wait(void)
 static void suspend_backoff(void)
 {
 	pr_info("suspend: too many immediate wakeups, back off\n");
-	++suspend_backoff_count;
 	wake_lock_timeout(&suspend_backoff_lock,
-			  msecs_to_jiffies(suspend_backoff_count *
-					   SUSPEND_BACKOFF_INTERVAL));
+			  msecs_to_jiffies(SUSPEND_BACKOFF_INTERVAL));
 }
 
 static void suspend(struct work_struct *work)
@@ -376,6 +372,7 @@ static void suspend(struct work_struct *work)
 	getnstimeofday(&ts_entry);
 	ret = pm_suspend(requested_suspend_state);
 	getnstimeofday(&ts_exit);
+
 	if (debug_mask & DEBUG_EXIT_SUSPEND) {
 		struct rtc_time tm;
 		rtc_time_to_tm(ts_exit.tv_sec, &tm);
@@ -386,15 +383,14 @@ static void suspend(struct work_struct *work)
 	}
 
 	if (ts_exit.tv_sec - ts_entry.tv_sec <= 1) {
-		++suspend_fail_count;
+		++suspend_short_count;
 
-		if (suspend_fail_count == SUSPEND_BACKOFF_FAILURES) {
+		if (suspend_short_count == SUSPEND_BACKOFF_THRESHOLD) {
 			suspend_backoff();
-			suspend_fail_count = 0;
+			suspend_short_count = 0;
 		}
 	} else {
-		suspend_fail_count = 0;
-		suspend_backoff_count = 0;
+		suspend_short_count = 0;
 	}
 
 	if (current_event_num == entry_event_num) {
@@ -428,7 +424,7 @@ static int power_suspend_late(struct device *dev)
 {
 	int ret = has_wake_lock(WAKE_LOCK_SUSPEND) ? -EAGAIN : 0;
 #ifdef CONFIG_WAKELOCK_STAT
-	wait_for_wakeup = 1;
+	wait_for_wakeup = !ret;
 #endif
 	if (debug_mask & DEBUG_SUSPEND)
 		pr_info("power_suspend_late return %d\n", ret);
@@ -700,8 +696,8 @@ static int __init wakelocks_init(void)
 
 	return 0;
 
-err_suspend_sys_sync_work_queue:
 err_suspend_work_queue:
+err_suspend_sys_sync_work_queue:
 	platform_driver_unregister(&power_driver);
 err_platform_driver_register:
 	platform_device_unregister(&power_device);

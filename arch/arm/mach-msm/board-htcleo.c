@@ -61,6 +61,7 @@
 #include <mach/board-htcleo-mac.h>
 #include <mach/board-htcleo-microp.h>
 #include <mach/board-htcleo-ts.h>
+#include <mach/socinfo.h>
 
 #include "board-htcleo.h"
 #include "devices.h"
@@ -1117,6 +1118,8 @@ static void __init htcleo_map_io(void)
 	msm_map_common_io();
 	htcleo_allocate_memory_regions();
 	msm_clock_init();
+	if (socinfo_init() < 0)
+		printk(KERN_ERR "%s: socinfo_init() failed!\n",__func__);
 	
 #if defined(CONFIG_VERY_EARLY_CONSOLE)
 // Init our consoles _really_ early

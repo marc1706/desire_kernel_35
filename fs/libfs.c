@@ -934,21 +934,12 @@ EXPORT_SYMBOL_GPL(generic_fh_to_parent);
  */
 int generic_file_fsync(struct file *file, int datasync)
 {
-	struct writeback_control wbc = {
-		.sync_mode = WB_SYNC_ALL,
-		.nr_to_write = 0, /* metadata-only; caller takes care of data */
-	};
 	struct inode *inode = file->f_mapping->host;
 	int err;
 	int ret;
 
 	ret = sync_mapping_buffers(inode->i_mapping);
-	if (!(inode->i_state & I_DIRTY))
-		return ret;
-	if (datasync && !(inode->i_state & I_DIRTY_DATASYNC))
-		return ret;
-
-	err = sync_inode(inode, &wbc);
+	err = sync_inode_metadata(inode, 1);
 	if (ret == 0)
 		ret = err;
 	return ret;

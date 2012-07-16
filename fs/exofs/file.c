@@ -43,16 +43,10 @@ static int exofs_release_file(struct inode *inode, struct file *filp)
 static int exofs_file_fsync(struct file *filp, int datasync)
 {
 	int ret;
-	struct address_space *mapping = filp->f_mapping;
-	struct inode *inode = mapping->host;
+	struct inode *inode = filp->f_mapping->host;
 	struct super_block *sb;
 
-	ret = filemap_write_and_wait(mapping);
-	if (ret)
-		return ret;
-
-	/* sync the inode attributes */
-	ret = write_inode_now(inode, 1);
+	ret = sync_inode_metadata(inode, 1);
 
 	/* This is a good place to write the sb */
 	/* TODO: Sechedule an sb-sync on create */
