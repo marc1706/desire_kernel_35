@@ -48,15 +48,6 @@ extern void dhdsdio_isr(void * args);
 #include <dngl_stats.h>
 #include <dhd.h>
 #endif /* defined(OOB_INTR_ONLY) */
-#if defined(CONFIG_MACH_SANDGATE2G) || defined(CONFIG_MACH_LOGICPD_PXA270)
-#if !defined(BCMPLATFORM_BUS)
-#define BCMPLATFORM_BUS
-#endif /* !defined(BCMPLATFORM_BUS) */
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19))
-#include <linux/platform_device.h>
-#endif /* KERNEL_VERSION(2, 6, 19) */
-#endif /* CONFIG_MACH_SANDGATE2G || CONFIG_MACH_LOGICPD_PXA270 */
 
 /**
  * SDIO Host Controller info
@@ -77,6 +68,7 @@ struct bcmsdh_hc {
 	unsigned int oob_irq;
 	unsigned long oob_flags; /* OOB Host specifiction as edge and etc */
 	bool oob_irq_registered;
+	bool oob_irq_enable_flag;
 #if defined(OOB_INTR_ONLY)
 	spinlock_t irq_lock;
 #endif
@@ -238,6 +230,7 @@ int bcmsdh_probe(struct device *dev)
 	sdhc->oob_irq = irq;
 	sdhc->oob_flags = irq_flags;
 	sdhc->oob_irq_registered = FALSE;	/* to make sure.. */
+	sdhc->oob_irq_enable_flag = FALSE;
 #if defined(OOB_INTR_ONLY)
 	spin_lock_init(&sdhc->irq_lock);
 #endif
@@ -618,6 +611,13 @@ static irqreturn_t wlan_oob_irq(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+void *bcmsdh_get_drvdata(void)
+{
+	if (!sdhcinfo)
+		return NULL;
+	return dev_get_drvdata(sdhcinfo->dev);
+}
+
 int bcmsdh_register_oob_intr(void * dhdp)
 {
 	int error = 0;
@@ -639,6 +639,7 @@ int bcmsdh_register_oob_intr(void * dhdp)
 
 		enable_irq_wake(sdhcinfo->oob_irq);
 		sdhcinfo->oob_irq_registered = TRUE;
+		sdhcinfo->oob_irq_enable_flag = TRUE;
 	}
 
 	return 0;
@@ -646,8 +647,9 @@ int bcmsdh_register_oob_intr(void * dhdp)
 
 void bcmsdh_set_irq(int flag)
 {
-	if (sdhcinfo->oob_irq_registered) {
+	if (sdhcinfo->oob_irq_registered && sdhcinfo->oob_irq_enable_flag != flag) {
 		SDLX_MSG(("%s Flag = %d", __FUNCTION__, flag));
+		sdhcinfo->oob_irq_enable_flag = flag;
 		if (flag) {
 			enable_irq(sdhcinfo->oob_irq);
 			enable_irq_wake(sdhcinfo->oob_irq);
@@ -663,8 +665,7 @@ void bcmsdh_unregister_oob_intr(void)
 	SDLX_MSG(("%s: Enter\n", __FUNCTION__));
 
 	if (sdhcinfo->oob_irq_registered == TRUE) {
-		disable_irq_wake(sdhcinfo->oob_irq);
-		disable_irq(sdhcinfo->oob_irq);	/* just in case.. */
+		bcmsdh_set_irq(FALSE);
 		free_irq(sdhcinfo->oob_irq, NULL);
 		sdhcinfo->oob_irq_registered = FALSE;
 	}
