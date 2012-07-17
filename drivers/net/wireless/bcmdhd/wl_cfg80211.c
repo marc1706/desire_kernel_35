@@ -4718,7 +4718,9 @@ static s32 wl_inform_single_bss(struct wl_priv *wl, struct wl_bss_info *bi)
 		offsetof(struct wl_cfg80211_bss_info, frame_buf));
 	notif_bss_info->frame_len = offsetof(struct ieee80211_mgmt,
 		u.beacon.variable) + wl_get_ielen(wl);
-#if LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 38) && !defined(WL_COMPAT_WIRELESS)
+#if (LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 38) || \
+	LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 35)) && \
+	!defined(WL_COMPAT_WIRELESS)
 	freq = ieee80211_channel_to_frequency(notif_bss_info->channel);
 #else
 	freq = ieee80211_channel_to_frequency(notif_bss_info->channel, band->band);
@@ -4821,7 +4823,9 @@ static s32 wl_inform_ibss(struct wl_priv *wl, const u8 *bssid)
 	else
 		band = wiphy->bands[IEEE80211_BAND_5GHZ];
 
-#if LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 38) && !defined(WL_COMPAT_WIRELESS)
+#if (LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 38) || \
+	LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 35)) && \
+	!defined(WL_COMPAT_WIRELESS)
 	freq = ieee80211_channel_to_frequency(channel);
 	(void)band->band;
 #else
@@ -5001,7 +5005,9 @@ wl_notify_connect_status_ap(struct wl_priv *wl, struct net_device *ndev,
 		WL_ERR(("No valid band"));
 		return -EINVAL;
 	}
-#if LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 38) && !defined(WL_COMPAT_WIRELESS)
+#if (LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 38) || \
+	LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 35)) && \
+	!defined(WL_COMPAT_WIRELESS)
 	freq = ieee80211_channel_to_frequency(channel);
 #else
 	freq = ieee80211_channel_to_frequency(channel, band->band);
@@ -5635,7 +5641,9 @@ wl_notify_rx_mgmt_frame(struct wl_priv *wl, struct net_device *ndev,
 		goto exit;
 	}
 
-#if LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 38) && !defined(WL_COMPAT_WIRELESS)
+#if (LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 38) || \
+	LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 35)) && \
+	!defined(WL_COMPAT_WIRELESS)
 	freq = ieee80211_channel_to_frequency(channel);
 #else
 	freq = ieee80211_channel_to_frequency(channel, band->band);
@@ -7097,7 +7105,9 @@ static int wl_construct_reginfo(struct wl_priv *wl, s32 bw_cap)
 			index = *n_cnt;
 
 		if (index <  array_size) {
-#if LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 38) && !defined(WL_COMPAT_WIRELESS)
+#if (LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 38) || \
+	LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 35)) && \
+	!defined(WL_COMPAT_WIRELESS)
 			band_chan_arr[index].center_freq =
 				ieee80211_channel_to_frequency(channel);
 #else
