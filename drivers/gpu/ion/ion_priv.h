@@ -71,6 +71,8 @@ struct ion_buffer {
 	void *vaddr;
 	int dmap_cnt;
 	struct scatterlist *sglist;
+	int umap_cnt;
+	int marked;
 };
 
 /**
@@ -84,6 +86,7 @@ struct ion_buffer {
  * @map_kernel		map memory to the kernel
  * @unmap_kernel	unmap memory to the kernel
  * @map_user		map memory to userspace
+ * @unmap_user		unmap memory to userspace
  */
 struct ion_heap_ops {
 	int (*allocate) (struct ion_heap *heap,
@@ -95,10 +98,17 @@ struct ion_heap_ops {
 	struct scatterlist *(*map_dma) (struct ion_heap *heap,
 					struct ion_buffer *buffer);
 	void (*unmap_dma) (struct ion_heap *heap, struct ion_buffer *buffer);
-	void * (*map_kernel) (struct ion_heap *heap, struct ion_buffer *buffer);
+	void * (*map_kernel) (struct ion_heap *heap, struct ion_buffer *buffer,
+				unsigned long flags);
 	void (*unmap_kernel) (struct ion_heap *heap, struct ion_buffer *buffer);
 	int (*map_user) (struct ion_heap *mapper, struct ion_buffer *buffer,
-			 struct vm_area_struct *vma);
+			 struct vm_area_struct *vma, unsigned long flags);
+	void (*unmap_user) (struct ion_heap *mapper, struct ion_buffer *buffer);
+	int (*cache_op)(struct ion_heap *heap, struct ion_buffer *buffer,
+			void *vaddr, unsigned int offset,
+			unsigned int length, unsigned int cmd);
+	unsigned long (*get_allocated)(struct ion_heap *heap);
+	unsigned long (*get_total)(struct ion_heap *heap);
 };
 
 /**
