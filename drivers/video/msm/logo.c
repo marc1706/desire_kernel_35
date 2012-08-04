@@ -29,6 +29,7 @@
 #define fb_height(fb)	((fb)->var.yres)
 #define fb_size(fb)	((fb)->var.xres * (fb)->var.yres * 2)
 
+#warning "TODO: check if this is needed while using newer mdp"
 /* 2012.5.2 SecureCRT
     Since the RLE is 565 but the framebuffer need 888 format
     so need to convert the format.

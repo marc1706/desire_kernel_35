@@ -1808,7 +1808,7 @@ static int __init htc_battery_init(void)
 	platform_driver_register(&htc_battery_core_driver);
 	batt_register_client(&batt_notify);
 	/* Jay, The msm_fb need to consult htc_battery for power policy */
-	display_notifier(htc_power_policy, NOTIFY_POWER);
+	//display_notifier(htc_power_policy, NOTIFY_POWER);
 	return 0;
 }
 
