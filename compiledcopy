@@ -21,3 +21,4 @@ cp ./fs/cifs/cifs.ko $CMP/modules/
 cp ./sound/htcleo/alsa-mix-htc-leo.ko $CMP/modules/
 cp ./sound/htcleo/alsa-pcm-htc-leo.ko $CMP/modules/
 cp ./drivers/net/msm_rmnet.ko $CMP/modules/
+cp ./drivers/net/tun.ko $CMP/modules/
