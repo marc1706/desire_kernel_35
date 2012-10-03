@@ -1,4 +1,4 @@
-/* linux/arch/arm/mach-msm/board-bravo-wifi.c
+/* linux/arch/arm/mach-msm/board-htcleo-wifi.c
 */
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -17,7 +17,7 @@ int htcleo_wifi_power(int on);
 int htcleo_wifi_reset(int on);
 int htcleo_wifi_set_carddetect(int on);
 
-#if defined(CONFIG_DHD_USE_STATIC_BUF) || defined(CONFIG_BCM4329_DHD_USE_STATIC_BUF)
+#if (defined(CONFIG_DHD_USE_STATIC_BUF) || defined(CONFIG_BCM4329))
 
 #define PREALLOC_WLAN_NUMBER_OF_SECTIONS	4
 
@@ -61,7 +61,7 @@ int __init htcleo_init_wifi_mem(void);
 
 int __init htcleo_init_wifi_mem(void)
 {
-#if defined(CONFIG_DHD_USE_STATIC_BUF) || defined(CONFIG_BCM4329_DHD_USE_STATIC_BUF)
+#if (defined(CONFIG_DHD_USE_STATIC_BUF) || defined(CONFIG_BCM4329))
 	int i;
 
 	for(i=0;( i < WLAN_SKB_BUF_NUM );i++) {
@@ -82,7 +82,11 @@ int __init htcleo_init_wifi_mem(void)
 
 static struct resource htcleo_wifi_resources[] = {
 	[0] = {
+#if defined(CONFIG_BCM4329)
+		.name		= "bcm4329_wlan_irq",
+#else
 		.name		= "bcmdhd_wlan_irq",
+#endif
 		.start		= MSM_GPIO_TO_INT(HTCLEO_GPIO_WIFI_IRQ),
 		.end		= MSM_GPIO_TO_INT(HTCLEO_GPIO_WIFI_IRQ),
 		.flags          = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHLEVEL,
@@ -93,7 +97,7 @@ static struct wifi_platform_data htcleo_wifi_control = {
 	.set_power      = htcleo_wifi_power,
 	.set_reset      = htcleo_wifi_reset,
 	.set_carddetect = htcleo_wifi_set_carddetect,
-#if defined(CONFIG_DHD_USE_STATIC_BUF) || defined(CONFIG_BCM4329_DHD_USE_STATIC_BUF)
+#if (defined(CONFIG_DHD_USE_STATIC_BUF) || defined(CONFIG_BCM4329))
 	.mem_prealloc   = htcleo_wifi_mem_prealloc,
 #else
 	.mem_prealloc   = NULL,
@@ -101,7 +105,11 @@ static struct wifi_platform_data htcleo_wifi_control = {
 };
 
 static struct platform_device htcleo_wifi_device = {
+#if defined(CONFIG_BCM4329)
+		.name			= "bcm4329_wlan",
+#else
         .name           = "bcmdhd_wlan",
+#endif
         .id             = 1,
         .num_resources  = ARRAY_SIZE(htcleo_wifi_resources),
         .resource       = htcleo_wifi_resources,

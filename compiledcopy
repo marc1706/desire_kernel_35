@@ -15,7 +15,7 @@ fi;
 #packaging
 cp ./arch/arm/boot/zImage $CMP/
 cp ./drivers/net/kineto_gan.ko $CMP/modules/
-cp ./drivers/net/wireless/bcmdhd/bcmdhd.ko $CMP/modules/
+cp ./drivers/net/wireless/bcm4329/bcm4329.ko $CMP/modules/
 cp ./drivers/staging/zram/zram.ko $CMP/modules/
 cp ./fs/cifs/cifs.ko $CMP/modules/
 cp ./sound/htcleo/alsa-mix-htc-leo.ko $CMP/modules/
