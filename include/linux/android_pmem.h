@@ -8,7 +8,7 @@
  * may be copied, distributed, and modified under those terms.
  *
  * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
@@ -45,7 +45,7 @@
  */
 #define PMEM_CONNECT		_IOW(PMEM_IOCTL_MAGIC, 6, unsigned int)
 /* Returns the total size of the pmem region it is sent to as a pmem_region
- * struct (with offset set to 0). 
+ * struct (with offset set to 0).
  */
 #define PMEM_GET_TOTAL_SIZE	_IOW(PMEM_IOCTL_MAGIC, 7, unsigned int)
 /* Revokes gpu registers and resets the gpu.  Pass a pointer to the
@@ -54,6 +54,7 @@
 #define HW3D_REVOKE_GPU		_IOW(PMEM_IOCTL_MAGIC, 8, unsigned int)
 #define PMEM_CACHE_FLUSH	_IOW(PMEM_IOCTL_MAGIC, 8, unsigned int)
 #define HW3D_GRANT_GPU		_IOW(PMEM_IOCTL_MAGIC, 9, unsigned int)
+#define HW3D_WAIT_FOR_INTERRUPT	_IOW(PMEM_IOCTL_MAGIC, 10, unsigned int)
 
 #define PMEM_CLEAN_INV_CACHES	_IOW(PMEM_IOCTL_MAGIC, 11, unsigned int)
 #define PMEM_CLEAN_CACHES	_IOW(PMEM_IOCTL_MAGIC, 12, unsigned int)
@@ -85,6 +86,8 @@ struct pmem_allocation {
 #ifdef __KERNEL__
 int get_pmem_file(unsigned int fd, unsigned long *start, unsigned long *vstart,
 		  unsigned long *end, struct file **filp);
+int get_pmem_addr(struct file *file, unsigned long *start,
+		  unsigned long *vstart, unsigned long *len);
 int get_pmem_fd(int fd, unsigned long *start, unsigned long *end);
 int get_pmem_user_addr(struct file *file, unsigned long *start,
 		       unsigned long *end);
@@ -101,6 +104,7 @@ enum pmem_allocator_type {
 	 * defined
 	 */
 	PMEM_ALLOCATORTYPE_BITMAP = 0, /* forced to be zero here */
+	PMEM_ALLOCATORTYPE_SYSTEM,
 
 	PMEM_ALLOCATORTYPE_ALLORNOTHING,
 	PMEM_ALLOCATORTYPE_BUDDYBESTFIT,
@@ -163,8 +167,6 @@ int pmem_setup(struct android_pmem_platform_data *pdata,
 
 int pmem_remap(struct pmem_region *region, struct file *file,
 	       unsigned operation);
-int is_pmem_file(struct file *file);
-
 #endif /* __KERNEL__ */
 
 #endif //_ANDROID_PPP_H_
