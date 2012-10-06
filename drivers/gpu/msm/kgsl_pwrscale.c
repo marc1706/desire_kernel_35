@@ -1,4 +1,5 @@
 /* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+ * Copyright (C) 2011 Sony Ericsson Mobile Communications AB.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -90,7 +91,7 @@ static ssize_t pwrscale_policy_show(struct kgsl_device *device, char *buf)
 	return ret;
 }
 
-PWRSCALE_ATTR(policy, 0666, pwrscale_policy_show, pwrscale_policy_store);
+PWRSCALE_ATTR(policy, 0644, pwrscale_policy_show, pwrscale_policy_store);
 
 static ssize_t pwrscale_avail_policies_show(struct kgsl_device *device,
 					    char *buf)

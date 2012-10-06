@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -13,9 +13,7 @@
 #ifndef __KGSL_PWRCTRL_H
 #define __KGSL_PWRCTRL_H
 
-#ifndef PWR_RAIL_GRP_CLK
-#define PWR_RAIL_GRP_CLK	0
-#endif
+#include <mach/internal_power_rail.h>
 
 /*****************************************************************************
 ** power flags

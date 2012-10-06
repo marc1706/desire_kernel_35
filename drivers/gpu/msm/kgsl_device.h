@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2011, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2002,2007-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -15,6 +15,7 @@
 
 #include <linux/idr.h>
 #include <linux/wakelock.h>
+#include <linux/pm_qos_params.h>
 #include <linux/earlysuspend.h>
 
 #include "kgsl.h"
@@ -45,6 +46,7 @@
 #define KGSL_STATE_SUSPEND	0x00000010
 #define KGSL_STATE_HUNG		0x00000020
 #define KGSL_STATE_DUMP_AND_RECOVER	0x00000040
+#define KGSL_STATE_SLUMBER	0x00000080
 
 #define KGSL_GRAPHICS_MEMORY_LOW_WATERMARK  0x1000000
 
@@ -74,9 +76,10 @@ struct kgsl_functable {
 		enum kgsl_property_type type, void *value,
 		unsigned int sizebytes);
 	int (*waittimestamp) (struct kgsl_device *device,
-		unsigned int timestamp, unsigned int msecs);
+		struct kgsl_context *context, unsigned int timestamp,
+		unsigned int msecs);
 	unsigned int (*readtimestamp) (struct kgsl_device *device,
-		enum kgsl_timestamp_type type);
+		struct kgsl_context *context, enum kgsl_timestamp_type type);
 	int (*issueibcmds) (struct kgsl_device_private *dev_priv,
 		struct kgsl_context *context, struct kgsl_ibdesc *ibdesc,
 		unsigned int sizedwords, uint32_t *timestamp,
@@ -99,6 +102,9 @@ struct kgsl_functable {
 		struct kgsl_context *context);
 	long (*ioctl) (struct kgsl_device_private *dev_priv,
 		unsigned int cmd, void *data);
+	int (*setproperty) (struct kgsl_device *device,
+		enum kgsl_property_type type, void *value,
+		unsigned int sizebytes);
 };
 
 struct kgsl_memregion {
@@ -118,10 +124,12 @@ struct kgsl_mh {
 };
 
 struct kgsl_event {
+	struct kgsl_context *context;
 	uint32_t timestamp;
-	void (*func)(struct kgsl_device *, void *, u32);
+	void (*func)(struct kgsl_device *, void *, u32, u32);
 	void *priv;
 	struct list_head list;
+	struct kgsl_device_private *owner;
 };
 
 
@@ -150,7 +158,7 @@ struct kgsl_device {
 	uint32_t state;
 	uint32_t requested_state;
 
-	struct list_head memqueue;
+	unsigned int last_expired_ctxt_id;
 	unsigned int active_cnt;
 	struct completion suspend_gate;
 
@@ -183,6 +191,11 @@ struct kgsl_context {
 
 	/* Pointer to the device specific context information */
 	void *devctxt;
+	/*
+	 * Status indicating whether a gpu reset occurred and whether this
+	 * context was responsible for causing it
+	 */
+	unsigned int reset_status;
 };
 
 struct kgsl_process_private {
@@ -192,15 +205,12 @@ struct kgsl_process_private {
 	struct list_head mem_list;
 	struct kgsl_pagetable *pagetable;
 	struct list_head list;
-	struct kobject *kobj;
+	struct kobject kobj;
 
 	struct {
-		unsigned int user;
-		unsigned int user_max;
-		unsigned int mapped;
-		unsigned int mapped_max;
-		unsigned int flushes;
-	} stats;
+		unsigned int cur;
+		unsigned int max;
+	} stats[KGSL_MEM_ENTRY_MAX];
 };
 
 struct kgsl_device_private {
@@ -214,6 +224,14 @@ struct kgsl_power_stats {
 };
 
 struct kgsl_device *kgsl_get_device(int dev_idx);
+
+static inline void kgsl_process_add_stats(struct kgsl_process_private *priv,
+	unsigned int type, size_t size)
+{
+	priv->stats[type].cur += size;
+	if (priv->stats[type].max < priv->stats[type].cur)
+		priv->stats[type].max = priv->stats[type].cur;
+}
 
 static inline void kgsl_regread(struct kgsl_device *device,
 				unsigned int offsetwords,
@@ -271,11 +289,10 @@ static inline struct kgsl_device *kgsl_device_from_dev(struct device *dev)
 
 static inline int kgsl_create_device_workqueue(struct kgsl_device *device)
 {
-	device->work_queue = create_singlethread_workqueue(device->name);
+	device->work_queue = create_workqueue(device->name);
 	if (!device->work_queue) {
-		KGSL_DRV_ERR(device,
-			     "create_singlethread_workqueue(%s) failed\n",
-			     device->name);
+		KGSL_DRV_ERR(device, "create_workqueue(%s) failed\n",
+			device->name);
 		return -EINVAL;
 	}
 	return 0;
@@ -293,7 +310,8 @@ kgsl_find_context(struct kgsl_device_private *dev_priv, uint32_t id)
 	return  (ctxt && ctxt->dev_priv == dev_priv) ? ctxt : NULL;
 }
 
-int kgsl_check_timestamp(struct kgsl_device *device, unsigned int timestamp);
+int kgsl_check_timestamp(struct kgsl_device *device,
+		struct kgsl_context *context, unsigned int timestamp);
 
 int kgsl_register_ts_notifier(struct kgsl_device *device,
 			      struct notifier_block *nb);

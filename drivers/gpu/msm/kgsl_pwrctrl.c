@@ -1,4 +1,5 @@
-/* Copyright (c) 2010-2012, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+ * Copyright (C) 2011 Sony Ericsson Mobile Communications AB.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -13,7 +14,6 @@
 #include <linux/interrupt.h>
 #include <linux/err.h>
 #include <mach/msm_iomap.h>
-#include <mach/socinfo.h>
 
 #include "kgsl.h"
 #include "kgsl_pwrscale.h"
@@ -463,11 +463,13 @@ int kgsl_pwrctrl_init(struct kgsl_device *device)
 	pwr->num_pwrlevels = pdata_pwr->num_levels;
 	pwr->active_pwrlevel = pdata_pwr->init_level;
 	for (i = 0; i < pdata_pwr->num_levels; i++) {
-		pwr->pwrlevels[i].gpu_freq =
-		(pdata_pwr->pwrlevel[i].gpu_freq > 0) ?
-		clk_round_rate(pwr->grp_clks[0],
-					   pdata_pwr->pwrlevel[i].
-					   gpu_freq) : 0;
+//		pwr->pwrlevels[i].gpu_freq =
+//		(pdata_pwr->pwrlevel[i].gpu_freq > 0) ?
+//		clk_round_rate(pwr->grp_clks[0],
+//					   pdata_pwr->pwrlevel[i].
+//					   gpu_freq) : 0;
+                pwr->pwrlevels[i].gpu_freq =(pdata_pwr->pwrlevel[i].gpu_freq > 0)?
+                                        pdata_pwr->pwrlevel[i].gpu_freq:0;
 		pwr->pwrlevels[i].bus_freq =
 			pdata_pwr->pwrlevel[i].bus_freq;
 	}

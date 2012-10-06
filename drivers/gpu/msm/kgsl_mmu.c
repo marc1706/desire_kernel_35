@@ -1,4 +1,4 @@
-/* Copyright (c) 2002,2007-2011, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2002,2007-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -454,7 +454,8 @@ struct kgsl_pagetable *kgsl_mmu_getpagetable(unsigned long name)
 	if (KGSL_MMU_TYPE_NONE == kgsl_mmu_type)
 		return (void *)(-1);
 
-#ifndef CONFIG_KGSL_PER_PROCESS_PAGE_TABLE
+#ifdef CONFIG_KGSL_PER_PROCESS_PAGE_TABLE
+#else
 		name = KGSL_MMU_GLOBAL_PT;
 #endif
 	pt = kgsl_get_pagetable(name);
@@ -591,6 +592,12 @@ kgsl_mmu_unmap(struct kgsl_pagetable *pagetable,
 			memdesc->gpuaddr & KGSL_MMU_ALIGN_MASK,
 			memdesc->size);
 
+	/*
+	 * Don't clear the gpuaddr on global mappings because they
+	 * may be in use by other pagetables
+	 */
+	if (!(memdesc->priv & KGSL_MEMFLAGS_GLOBAL))
+	memdesc->gpuaddr = 0;
 	return 0;
 }
 EXPORT_SYMBOL(kgsl_mmu_unmap);
@@ -622,6 +629,7 @@ int kgsl_mmu_map_global(struct kgsl_pagetable *pagetable,
 			gpuaddr, memdesc->gpuaddr);
 		goto error_unmap;
 	}
+	memdesc->priv |= KGSL_MEMFLAGS_GLOBAL;
 	return result;
 error_unmap:
 	kgsl_mmu_unmap(pagetable, memdesc);
@@ -709,6 +717,7 @@ void kgsl_mmu_set_mmutype(char *mmutype)
 	kgsl_mmu_type = KGSL_MMU_TYPE_NONE;
 #ifdef CONFIG_MSM_KGSL_GPUMMU
 	kgsl_mmu_type = KGSL_MMU_TYPE_GPU;
+#elif defined(CONFIG_MSM_KGSL_IOMMU)
 #endif
 	if (mmutype && !strncmp(mmutype, "gpummu", 6))
 		kgsl_mmu_type = KGSL_MMU_TYPE_GPU;
