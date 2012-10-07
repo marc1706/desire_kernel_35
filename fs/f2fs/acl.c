@@ -245,6 +245,25 @@ static int f2fs_set_acl(struct inode *inode, int type, struct posix_acl *acl)
 	return error;
 }
 
+/*
+ * add f2fs_get_acl helper function for 2.6.35
+ * by Marc Alexander
+ */
+int f2fs_check_acl(struct inode *inode, int mask)
+{
+	struct posix_acl *acl = f2fs_get_acl(inode, ACL_TYPE_ACCESS);
+
+	if (IS_ERR(acl))
+		return PTR_ERR(acl);
+	if (acl) {
+		int error = posix_acl_permission(inode, acl, mask);
+		posix_acl_release(acl);
+		return error;
+	}
+
+	return -EAGAIN;
+}
+
 int f2fs_init_acl(struct inode *inode, struct inode *dir)
 {
 	struct posix_acl *acl = NULL;
