@@ -1132,7 +1132,11 @@ static struct dentry * __d_find_any_alias(struct inode *inode)
 	if (list_empty(&inode->i_dentry))
 		return NULL;
 	alias = list_first_entry(&inode->i_dentry, struct dentry, d_alias);
-	__dget(alias);
+	/*
+	 * code is too old to support __dget(), use dget_locked() instead
+	 * -- marc1706
+	 */
+	dget_locked(alias);
 	return alias;
 }
 
