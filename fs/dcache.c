@@ -1140,7 +1140,7 @@ static struct dentry * __d_find_any_alias(struct inode *inode)
 	return alias;
 }
 
-static struct dentry * d_find_any_alias(struct inode *inode)
+struct dentry * d_find_any_alias(struct inode *inode)
 {
 	struct dentry *de;
 
@@ -1149,6 +1149,7 @@ static struct dentry * d_find_any_alias(struct inode *inode)
 	spin_unlock(&inode->i_lock);
 	return de;
 }
+EXPORT_SYMBOL(d_find_any_alias);
 
 
 /**
