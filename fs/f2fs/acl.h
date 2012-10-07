@@ -37,6 +37,7 @@ struct f2fs_acl_header {
 #ifdef CONFIG_F2FS_FS_POSIX_ACL
 
 extern struct posix_acl *f2fs_get_acl(struct inode *inode, int type);
+extern int f2fs_check_acl(struct inode *inode, int mask);
 extern int f2fs_acl_chmod(struct inode *inode);
 extern int f2fs_init_acl(struct inode *inode, struct inode *dir);
 #else
