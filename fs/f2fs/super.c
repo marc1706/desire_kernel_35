@@ -77,16 +77,24 @@ static struct inode *f2fs_alloc_inode(struct super_block *sb)
 
 	return &fi->vfs_inode;
 }
-
+/*
 static void f2fs_i_callback(struct rcu_head *head)
 {
 	struct inode *inode = container_of(head, struct inode, i_rcu);
 	kmem_cache_free(f2fs_inode_cachep, F2FS_I(inode));
 }
+*/
 
 void f2fs_destroy_inode(struct inode *inode)
 {
-	call_rcu(&inode->i_rcu, f2fs_i_callback);
+	/*
+	 * there is probably a reason for using call_rcu() but this really
+	 * just looks like bullshit to send the rcu_head to f2fs_i_callback()
+	 * and then transforming it back to an inode ...
+	 * -- marc1706
+	 */
+	//call_rcu(&inode->i_rcu, f2fs_i_callback);
+	kmem_cache_free(f2fs_inode_cachep, F2FS_I(inode));
 }
 
 static void f2fs_put_super(struct super_block *sb)
@@ -158,9 +166,10 @@ static int f2fs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	return 0;
 }
 
-static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
+static int f2fs_show_options(struct seq_file *seq, struct vfsmount *vfs)
 {
-	struct f2fs_sb_info *sbi = F2FS_SB(root->d_sb);
+	struct super_block *sb = vfs->mnt_sb;
+	struct f2fs_sb_info *sbi = F2FS_SB(sb);
 
 	if (test_opt(sbi, BG_GC))
 		seq_puts(seq, ",background_gc_on");
@@ -192,7 +201,8 @@ static struct super_operations f2fs_sops = {
 	.destroy_inode	= f2fs_destroy_inode,
 	.write_inode	= f2fs_write_inode,
 	.show_options	= f2fs_show_options,
-	.evict_inode	= f2fs_evict_inode,
+//	.evict_inode	= f2fs_evict_inode,
+	.delete_inode	= f2fs_evict_inode,
 	.put_super	= f2fs_put_super,
 	.sync_fs	= f2fs_sync_fs,
 	.statfs		= f2fs_statfs,
@@ -439,7 +449,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
 	if (!S_ISDIR(root->i_mode) || !root->i_blocks || !root->i_size)
 		goto free_root_inode;
 
-	sb->s_root = d_make_root(root); /* allocate root dentry */
+	sb->s_root = d_alloc_root(root); /* allocate root dentry */
 	if (!sb->s_root)
 		goto free_root_inode;
 
@@ -485,16 +495,17 @@ free_sbi:
 	return -EINVAL;
 }
 
-static struct dentry *f2fs_mount(struct file_system_type *fs_type, int flags,
-			const char *dev_name, void *data)
+static int f2fs_mount(struct file_system_type *fs_type, int flags,
+			const char *dev_name, void *data, struct vfsmount *mnt)
 {
-	return mount_bdev(fs_type, flags, dev_name, data, f2fs_fill_super);
+	//return mount_bdev(fs_type, flags, dev_name, data, f2fs_fill_super);
+	return get_sb_bdev(fs_type, flags, dev_name, data, f2fs_fill_super, mnt);
 }
 
 static struct file_system_type f2fs_fs_type = {
 	.owner		= THIS_MODULE,
 	.name		= "f2fs",
-	.mount		= f2fs_mount,
+	.get_sb		= f2fs_mount,
 	.kill_sb	= kill_block_super,
 	.fs_flags	= FS_REQUIRES_DEV,
 };
