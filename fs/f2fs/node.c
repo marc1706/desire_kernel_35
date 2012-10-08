@@ -1432,8 +1432,8 @@ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
 	SetPageUptodate(ipage);
 	fill_node_footer(ipage, ino, ino, 0, true);
 
-	src = kmap_atomic(page);
-	dst = kmap_atomic(ipage);
+	src = kmap_atomic(page, KM_USER0);
+	dst = kmap_atomic(ipage, KM_USER0);
 
 	memcpy(dst, src, F2FS_INODE_SIZE);
 	rn = (struct f2fs_node *)dst;
@@ -1441,8 +1441,8 @@ int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
 	rn->i.i_blocks = 1;
 	rn->i.i_links = 1;
 	rn->i.i_xattr_nid = 0;
-	kunmap_atomic(dst);
-	kunmap_atomic(src);
+	kunmap_atomic(dst, KM_USER0);
+	kunmap_atomic(src, KM_USER0);
 
 	new_ni = old_ni;
 	new_ni.ino = ino;

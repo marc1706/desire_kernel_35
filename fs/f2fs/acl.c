@@ -267,6 +267,8 @@ int f2fs_check_acl(struct inode *inode, int mask)
 int f2fs_init_acl(struct inode *inode, struct inode *dir)
 {
 	struct posix_acl *acl = NULL;
+	mode_t mode;
+	struct posix_acl *clone;
 	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
 	int error = 0;
 
@@ -287,7 +289,13 @@ int f2fs_init_acl(struct inode *inode, struct inode *dir)
 			if (error)
 				goto cleanup;
 		}
-		error = posix_acl_create(&acl, GFP_KERNEL, &inode->i_mode);
+		//error = posix_acl_create(&acl, GFP_KERNEL, &inode->i_mode);
+		clone = posix_acl_clone(acl, GFP_KERNEL);
+		error = -ENOMEM;
+		if (!clone)
+			goto cleanup;
+		mode = inode->i_mode;
+		error = posix_acl_create_masq(clone, &mode);
 		if (error < 0)
 			return error;
 		if (error > 0)
@@ -301,7 +309,7 @@ cleanup:
 int f2fs_acl_chmod(struct inode *inode)
 {
 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-	struct posix_acl *acl;
+	struct posix_acl *acl, *clone;
 	int error;
 	mode_t mode = get_inode_mode(inode);
 
@@ -314,7 +322,12 @@ int f2fs_acl_chmod(struct inode *inode)
 	if (IS_ERR(acl) || !acl)
 		return PTR_ERR(acl);
 
-	error = posix_acl_chmod(&acl, GFP_KERNEL, mode);
+	//error = posix_acl_chmod(&acl, GFP_KERNEL, mode);
+	clone = posix_acl_clone(acl, GFP_KERNEL);
+	posix_acl_release(acl);
+	if (!clone)
+		return -ENOMEM;
+	error = posix_acl_chmod_masq(clone, inode->i_mode);
 	if (error)
 		return error;
 	error = f2fs_set_acl(inode, ACL_TYPE_ACCESS, acl);
@@ -381,7 +394,11 @@ static int f2fs_xattr_set_acl(struct dentry *dentry, const char *name,
 	if (strcmp(name, "") != 0)
 		return -EINVAL;
 
-	if (!inode_owner_or_capable(inode))
+	/*
+	 * 2.6.35 uses is_owner_or_cap() instead of inode_owner_or_capable()
+	 * -- marc1706
+	 */
+	if (!is_owner_or_cap(inode))
 		return -EPERM;
 
 	if (value) {
