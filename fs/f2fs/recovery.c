@@ -9,6 +9,7 @@
  * published by the Free Software Foundation.
  */
 #include <linux/fs.h>
+#include <linux/bio.h>
 #include <linux/f2fs_fs.h>
 #include "f2fs.h"
 #include "node.h"

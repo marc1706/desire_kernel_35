@@ -12,6 +12,7 @@
 #include <linux/f2fs_fs.h>
 #include <linux/bio.h>
 #include <linux/blkdev.h>
+#include <linux/vmalloc.h>
 
 #include "f2fs.h"
 #include "segment.h"
@@ -678,8 +679,12 @@ static void do_submit_bio(struct f2fs_sb_info *sbi,
 	int rw = sync ? WRITE_SYNC : WRITE;
 	enum page_type btype = type > META ? META : type;
 
+	/*
+	 * 2.6.35 doesn't have WRITE_FLUSH_FUA, so just use WRITE_BARRIER
+	 * -- marc1706
+	 */
 	if (type >= META_FLUSH)
-		rw = WRITE_FLUSH_FUA;
+		rw = WRITE_BARRIER;
 
 	if (sbi->bio[btype]) {
 		struct bio_private *p = sbi->bio[btype]->bi_private;
