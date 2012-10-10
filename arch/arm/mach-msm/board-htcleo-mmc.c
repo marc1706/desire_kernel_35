@@ -219,6 +219,7 @@ static struct mmc_platform_data htcleo_wifi_data = {
 	 * by marc1706
 	 */
 	.ocr_mask		= MMC_VDD_26_27,
+	.built_in		= 1,
 	.status			= htcleo_wifi_status,
 	.register_status_notify	= htcleo_wifi_status_register,
 	.embedded_sdio		= &htcleo_wifi_emb_data,
