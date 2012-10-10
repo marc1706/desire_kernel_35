@@ -14,6 +14,24 @@ config MMC_BLOCK
 	  mount the filesystem. Almost everyone wishing MMC support
 	  should say Y or M here.
 
+config MMC_BLOCK_MINORS
+	int "Number of minors per block device"
+	depends on MMC_BLOCK
+	range 4 256
+	default 8
+	help
+	  Number of minors per block device. One is needed for every
+	  partition on the disk (plus one for the whole disk).
+
+	  Number of total MMC minors available is 256, so your number
+	  of supported block devices will be limited to 256 divided
+	  by this number.
+
+	  Default is 8 to be backwards compatible with previous
+	  hardwired device numbering.
+
+	  If unsure, say 8 here.
+
 config MMC_BLOCK_BOUNCE
 	bool "Use bounce buffer for simple hosts"
 	depends on MMC_BLOCK
@@ -31,13 +49,6 @@ config MMC_BLOCK_BOUNCE
 	  physical memory.
 
 	  If unsure, say Y here.
-
-config MMC_BLOCK_PARANOID_RESUME
-	bool "Check card status on resume"
-        depends on MMC_BLOCK
-        default y
-        help
-          Nohelp
 
 config MMC_BLOCK_DEFERRED_RESUME
 	bool "Deferr MMC layer resume until I/O is requested"
@@ -66,10 +77,3 @@ config MMC_TEST
 
 	  This driver is only of interest to those developing or
 	  testing a host driver. Most people should say N here.
-
-config MMC_TI_SDIO_ADAPT
-	bool "Use TI SDIO driver to do EMAPI function"
-	help
-	  TI-1271 driver has its own SDIO driver. we use its SDIO drive
-	  to do EMAPI function.
-
