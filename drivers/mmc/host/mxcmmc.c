@@ -31,6 +31,7 @@
 #include <linux/clk.h>
 #include <linux/io.h>
 #include <linux/gpio.h>
+#include <linux/regulator/consumer.h>
 
 #include <asm/dma.h>
 #include <asm/irq.h>
@@ -119,6 +120,7 @@ struct mxcmci_host {
 	int			detect_irq;
 	int			dma;
 	int			do_dma;
+	int			default_irq_mask;
 	int			use_sdio;
 	unsigned int		power_mode;
 	struct imxmmc_platform_data *pdata;
@@ -140,9 +142,48 @@ struct mxcmci_host {
 
 	struct work_struct	datawork;
 	spinlock_t		lock;
+
+	struct regulator	*vcc;
 };
 
 static void mxcmci_set_clk_rate(struct mxcmci_host *host, unsigned int clk_ios);
+
+static inline void mxcmci_init_ocr(struct mxcmci_host *host)
+{
+	host->vcc = regulator_get(mmc_dev(host->mmc), "vmmc");
+
+	if (IS_ERR(host->vcc)) {
+		host->vcc = NULL;
+	} else {
+		host->mmc->ocr_avail = mmc_regulator_get_ocrmask(host->vcc);
+		if (host->pdata && host->pdata->ocr_avail)
+			dev_warn(mmc_dev(host->mmc),
+				"pdata->ocr_avail will not be used\n");
+	}
+
+	if (host->vcc == NULL) {
+		/* fall-back to platform data */
+		if (host->pdata && host->pdata->ocr_avail)
+			host->mmc->ocr_avail = host->pdata->ocr_avail;
+		else
+			host->mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+	}
+}
+
+static inline void mxcmci_set_power(struct mxcmci_host *host,
+				    unsigned char power_mode,
+				    unsigned int vdd)
+{
+	if (host->vcc) {
+		if (power_mode == MMC_POWER_UP)
+			mmc_regulator_set_ocr(host->mmc, host->vcc, vdd);
+		else if (power_mode == MMC_POWER_OFF)
+			mmc_regulator_set_ocr(host->mmc, host->vcc, 0);
+	}
+
+	if (host->pdata && host->pdata->setpower)
+		host->pdata->setpower(mmc_dev(host->mmc), vdd);
+}
 
 static inline int mxcmci_use_dma(struct mxcmci_host *host)
 {
@@ -228,7 +269,7 @@ static int mxcmci_setup_data(struct mxcmci_host *host, struct mmc_data *data)
 static int mxcmci_start_cmd(struct mxcmci_host *host, struct mmc_command *cmd,
 		unsigned int cmdat)
 {
-	u32 int_cntr;
+	u32 int_cntr = host->default_irq_mask;
 	unsigned long flags;
 
 	WARN_ON(host->cmd != NULL);
@@ -275,7 +316,7 @@ static int mxcmci_start_cmd(struct mxcmci_host *host, struct mmc_command *cmd,
 static void mxcmci_finish_request(struct mxcmci_host *host,
 		struct mmc_request *req)
 {
-	u32 int_cntr = 0;
+	u32 int_cntr = host->default_irq_mask;
 	unsigned long flags;
 
 	spin_lock_irqsave(&host->lock, flags);
@@ -585,6 +626,9 @@ static irqreturn_t mxcmci_irq(int irq, void *devid)
 		  (stat & (STATUS_DATA_TRANS_DONE | STATUS_WRITE_OP_DONE)))
 		mxcmci_data_done(host, stat);
 #endif
+	if (host->default_irq_mask &&
+		  (stat & (STATUS_CARD_INSERTION | STATUS_CARD_REMOVAL)))
+		mmc_detect_change(host->mmc, msecs_to_jiffies(200));
 	return IRQ_HANDLED;
 }
 
@@ -676,9 +720,9 @@ static void mxcmci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		host->cmdat &= ~CMD_DAT_CONT_BUS_WIDTH_4;
 
 	if (host->power_mode != ios->power_mode) {
-		if (host->pdata && host->pdata->setpower)
-			host->pdata->setpower(mmc_dev(mmc), ios->vdd);
+		mxcmci_set_power(host, ios->power_mode, ios->vdd);
 		host->power_mode = ios->power_mode;
+
 		if (ios->power_mode == MMC_POWER_ON)
 			host->cmdat |= CMD_DAT_CONT_INIT;
 	}
@@ -786,8 +830,7 @@ static int mxcmci_probe(struct platform_device *pdev)
 	mmc->caps = MMC_CAP_4_BIT_DATA | MMC_CAP_SDIO_IRQ;
 
 	/* MMC core transfer sizes tunable parameters */
-	mmc->max_hw_segs = 64;
-	mmc->max_phys_segs = 64;
+	mmc->max_segs = 64;
 	mmc->max_blk_size = 2048;
 	mmc->max_blk_count = 65535;
 	mmc->max_req_size = mmc->max_blk_size * mmc->max_blk_count;
@@ -804,10 +847,13 @@ static int mxcmci_probe(struct platform_device *pdev)
 	host->pdata = pdev->dev.platform_data;
 	spin_lock_init(&host->lock);
 
-	if (host->pdata && host->pdata->ocr_avail)
-		mmc->ocr_avail = host->pdata->ocr_avail;
+	mxcmci_init_ocr(host);
+
+	if (host->pdata && host->pdata->dat3_card_detect)
+		host->default_irq_mask =
+			INT_CARD_INSERTION_EN | INT_CARD_REMOVAL_EN;
 	else
-		mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+		host->default_irq_mask = 0;
 
 	host->res = r;
 	host->irq = irq;
@@ -835,7 +881,7 @@ static int mxcmci_probe(struct platform_device *pdev)
 	/* recommended in data sheet */
 	writew(0x2db4, host->base + MMC_REG_READ_TO);
 
-	writel(0, host->base + MMC_REG_INT_CNTR);
+	writel(host->default_irq_mask, host->base + MMC_REG_INT_CNTR);
 
 #ifdef HAS_DMA
 	host->dma = imx_dma_request_by_prio(DRIVER_NAME, DMA_PRIO_LOW);
@@ -906,6 +952,9 @@ static int mxcmci_remove(struct platform_device *pdev)
 
 	mmc_remove_host(mmc);
 
+	if (host->vcc)
+		regulator_put(host->vcc);
+
 	if (host->pdata && host->pdata->exit)
 		host->pdata->exit(&pdev->dev, mmc);
 
@@ -918,7 +967,6 @@ static int mxcmci_remove(struct platform_device *pdev)
 	clk_put(host->clk);
 
 	release_mem_region(host->res->start, resource_size(host->res));
-	release_resource(host->res);
 
 	mmc_free_host(mmc);
 
@@ -926,43 +974,47 @@ static int mxcmci_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
-static int mxcmci_suspend(struct platform_device *dev, pm_message_t state)
+static int mxcmci_suspend(struct device *dev)
 {
-	struct mmc_host *mmc = platform_get_drvdata(dev);
+	struct mmc_host *mmc = dev_get_drvdata(dev);
+	struct mxcmci_host *host = mmc_priv(mmc);
 	int ret = 0;
 
 	if (mmc)
 		ret = mmc_suspend_host(mmc);
+	clk_disable(host->clk);
 
 	return ret;
 }
 
-static int mxcmci_resume(struct platform_device *dev)
+static int mxcmci_resume(struct device *dev)
 {
-	struct mmc_host *mmc = platform_get_drvdata(dev);
-	struct mxcmci_host *host;
+	struct mmc_host *mmc = dev_get_drvdata(dev);
+	struct mxcmci_host *host = mmc_priv(mmc);
 	int ret = 0;
 
-	if (mmc) {
-		host = mmc_priv(mmc);
+	clk_enable(host->clk);
+	if (mmc)
 		ret = mmc_resume_host(mmc);
-	}
 
 	return ret;
 }
-#else
-#define mxcmci_suspend  NULL
-#define mxcmci_resume   NULL
-#endif /* CONFIG_PM */
+
+static const struct dev_pm_ops mxcmci_pm_ops = {
+	.suspend	= mxcmci_suspend,
+	.resume		= mxcmci_resume,
+};
+#endif
 
 static struct platform_driver mxcmci_driver = {
 	.probe		= mxcmci_probe,
 	.remove		= mxcmci_remove,
-	.suspend	= mxcmci_suspend,
-	.resume		= mxcmci_resume,
 	.driver		= {
 		.name		= DRIVER_NAME,
 		.owner		= THIS_MODULE,
+#ifdef CONFIG_PM
+		.pm	= &mxcmci_pm_ops,
+#endif
 	}
 };
 
