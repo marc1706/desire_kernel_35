@@ -1454,7 +1454,7 @@ static int ppp_mp_explode(struct ppp *ppp, struct sk_buff *skb)
 
 		/*
 		 *check if we are on the last channel or
-		 *we exceded the lenght of the data to
+		 *we excedeed the length of the data to
 		 *fragment
 		 */
 		if ((nfree <= 0) || (flen > len))
