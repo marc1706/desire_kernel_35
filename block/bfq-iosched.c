@@ -507,8 +507,9 @@ add_bfqq_busy:
                 if(bfqd->low_latency && old_raising_coeff == 1 &&
 			!rq_is_sync(rq) &&
 			bfqq->last_rais_start_finish +
-                        bfqd->bfq_raising_min_idle_time < jiffies) {
+                        bfqd->bfq_raising_min_inter_arr_async < jiffies) {
                         bfqq->raising_coeff = bfqd->bfq_raising_coeff;
+			bfqq->raising_cur_max_time = bfqd->bfq_raising_max_time;
 
 			entity->ioprio_changed = 1;
 			bfq_log_bfqq(bfqd, bfqq,
@@ -707,23 +708,12 @@ static inline sector_t bfq_dist_from_last(struct bfq_data *bfqd,
  * bfqd->last_position, or if rq is closer to bfqd->last_position than
  * bfqq->next_rq
  */
-static inline int bfq_rq_close(struct bfq_data *bfqd, struct bfq_queue *bfqq,
-			       struct request *rq)
+static inline int bfq_rq_close(struct bfq_data *bfqd, struct request *rq)
 {
-	sector_t sdist = bfqq->seek_mean;
-
-	if (!bfq_sample_valid(bfqq->seek_samples))
-		sdist = BFQQ_SEEK_THR;
-
-	/* If seek_mean is large, using it as close criteria is meaningless */
-	if (sdist > BFQQ_SEEK_THR)
-		sdist = BFQQ_SEEK_THR;
-
-	return bfq_dist_from_last(bfqd, rq) <= sdist;
+	return bfq_dist_from_last(bfqd, rq) <= BFQQ_SEEK_THR;
 }
 
-static struct bfq_queue *bfqq_close(struct bfq_data *bfqd,
-				    struct bfq_queue *cur_bfqq)
+static struct bfq_queue *bfqq_close(struct bfq_data *bfqd)
 {
 	struct rb_root *root = &bfqd->rq_pos_tree;
 	struct rb_node *parent, *node;
@@ -747,7 +737,7 @@ static struct bfq_queue *bfqq_close(struct bfq_data *bfqd,
 	 * position).
 	 */
 	__bfqq = rb_entry(parent, struct bfq_queue, pos_node);
-	if (bfq_rq_close(bfqd, cur_bfqq, __bfqq->next_rq))
+	if (bfq_rq_close(bfqd, __bfqq->next_rq))
 		return __bfqq;
 
 	if (blk_rq_pos(__bfqq->next_rq) < sector)
@@ -758,7 +748,7 @@ static struct bfq_queue *bfqq_close(struct bfq_data *bfqd,
 		return NULL;
 
 	__bfqq = rb_entry(node, struct bfq_queue, pos_node);
-	if (bfq_rq_close(bfqd, cur_bfqq, __bfqq->next_rq))
+	if (bfq_rq_close(bfqd, __bfqq->next_rq))
 		return __bfqq;
 
 	return NULL;
@@ -794,7 +784,7 @@ static struct bfq_queue *bfq_close_cooperator(struct bfq_data *bfqd,
 	 * working closely on the same area of the disk. In that case,
 	 * we can group them together and don't waste time idling.
 	 */
-	bfqq = bfqq_close(bfqd, cur_bfqq);
+	bfqq = bfqq_close(bfqd);
 	if (bfqq == NULL || bfqq == cur_bfqq)
 		return NULL;
 
@@ -954,7 +944,7 @@ static int bfqq_process_refs(struct bfq_queue *bfqq)
 	int process_refs, io_refs;
 
 	io_refs = bfqq->allocated[READ] + bfqq->allocated[WRITE];
-	process_refs = atomic_read(&bfqq->ref) - io_refs;
+	process_refs = atomic_read(&bfqq->ref) - io_refs - bfqq->entity.on_st;
 	BUG_ON(process_refs < 0);
 	return process_refs;
 }
@@ -2666,6 +2656,7 @@ static void *bfq_init_queue(struct request_queue *q)
 	bfqd->bfq_raising_rt_max_time = msecs_to_jiffies(300);
 	bfqd->bfq_raising_max_time = msecs_to_jiffies(7500);
 	bfqd->bfq_raising_min_idle_time = msecs_to_jiffies(2000);
+	bfqd->bfq_raising_min_inter_arr_async = msecs_to_jiffies(500);
 	bfqd->bfq_raising_max_softrt_rate = 7000;
 
 	return bfqd;
@@ -2716,7 +2707,7 @@ static ssize_t bfq_var_store(unsigned long *var, const char *page, size_t count)
 
 static ssize_t bfq_weights_show(struct elevator_queue *e, char *page)
 {
-        struct bfq_queue *bfqq;
+	struct bfq_queue *bfqq;
 	struct bfq_data *bfqd = e->elevator_data;
 	ssize_t num_char = 0;
 
@@ -2768,6 +2759,9 @@ SHOW_FUNCTION(bfq_raising_max_time_show, bfqd->bfq_raising_max_time, 1);
 SHOW_FUNCTION(bfq_raising_rt_max_time_show, bfqd->bfq_raising_rt_max_time, 1);
 SHOW_FUNCTION(bfq_raising_min_idle_time_show, bfqd->bfq_raising_min_idle_time,
 	1);
+SHOW_FUNCTION(bfq_raising_min_inter_arr_async_show,
+	      bfqd->bfq_raising_min_inter_arr_async,
+	      1);
 SHOW_FUNCTION(bfq_raising_max_softrt_rate_show,
 	bfqd->bfq_raising_max_softrt_rate, 0);
 #undef SHOW_FUNCTION
@@ -2810,6 +2804,8 @@ STORE_FUNCTION(bfq_raising_rt_max_time_store, &bfqd->bfq_raising_rt_max_time, 0,
 		INT_MAX, 1);
 STORE_FUNCTION(bfq_raising_min_idle_time_store,
 	       &bfqd->bfq_raising_min_idle_time, 0, INT_MAX, 1);
+STORE_FUNCTION(bfq_raising_min_inter_arr_async_store,
+	       &bfqd->bfq_raising_min_inter_arr_async, 0, INT_MAX, 1);
 STORE_FUNCTION(bfq_raising_max_softrt_rate_store,
 	       &bfqd->bfq_raising_max_softrt_rate, 0, INT_MAX, 0);
 #undef STORE_FUNCTION
@@ -2903,6 +2899,7 @@ static struct elv_fs_entry bfq_attrs[] = {
 	BFQ_ATTR(raising_max_time),
 	BFQ_ATTR(raising_rt_max_time),
 	BFQ_ATTR(raising_min_idle_time),
+	BFQ_ATTR(raising_min_inter_arr_async),
 	BFQ_ATTR(raising_max_softrt_rate),
 	BFQ_ATTR(weights),
 	__ATTR_NULL
