@@ -504,7 +504,9 @@ static void bfq_add_rq_rb(struct request *rq)
 add_bfqq_busy:
 		bfq_add_bfqq_busy(bfqd, bfqq);
         } else {
-                if(old_raising_coeff == 1 && bfqq->last_rais_start_finish +
+                if(bfqd->low_latency && old_raising_coeff == 1 &&
+			!rq_is_sync(rq) &&
+			bfqq->last_rais_start_finish +
                         bfqd->bfq_raising_min_idle_time < jiffies) {
                         bfqq->raising_coeff = bfqd->bfq_raising_coeff;
 
