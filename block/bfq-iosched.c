@@ -832,6 +832,26 @@ static inline unsigned long bfq_min_budget(struct bfq_data *bfqd)
 		bfqd->bfq_max_budget / 32;
 }
 
+/*
+ * Decides whether idling should be done for given device and
+ * given active queue.
+ */
+static inline bool bfq_queue_nonrot_noidle(struct bfq_data *bfqd,
+					   struct bfq_queue *active_bfqq)
+{
+	if (active_bfqq == NULL)
+		return false;
+	/*
+	 * If device is SSD it has no seek penalty, disable idling; but
+	 * do so only if:
+	 * - device does not support queuing, otherwise we still have
+	 *   a problem with sync vs async workloads;
+	 * - the queue is not weight-raised, to preserve guarantees.
+	 */
+	return (blk_queue_nonrot(bfqd->queue) && bfqd->hw_tag &&
+		active_bfqq->raising_coeff == 1);
+}
+
 static void bfq_arm_slice_timer(struct bfq_data *bfqd)
 {
 	struct bfq_queue *bfqq = bfqd->active_queue;
@@ -839,6 +859,9 @@ static void bfq_arm_slice_timer(struct bfq_data *bfqd)
 	unsigned long sl;
 
 	WARN_ON(!RB_EMPTY_ROOT(&bfqq->sort_list));
+
+	if (bfq_queue_nonrot_noidle(bfqd, bfqq))
+		return;
 
 	/* Idling is disabled, either manually or by past process history. */
 	if (bfqd->bfq_slice_idle == 0 || !bfq_bfqq_idle_window(bfqq))
@@ -1472,7 +1495,8 @@ static struct bfq_queue *bfq_select_queue(struct bfq_data *bfqd)
 	 * then keep it.
 	 */
 	if (new_bfqq == NULL && (timer_pending(&bfqd->idle_slice_timer) ||
-		(bfqq->dispatched != 0 && bfq_bfqq_idle_window(bfqq)))) {
+		(bfqq->dispatched != 0 && bfq_bfqq_idle_window(bfqq) &&
+		 !bfq_queue_nonrot_noidle(bfqd, bfqq)))) {
 		bfqq = NULL;
 		goto keep_queue;
 	} else if (new_bfqq != NULL && timer_pending(&bfqd->idle_slice_timer)) {
@@ -2164,6 +2188,9 @@ static void bfq_update_hw_tag(struct bfq_data *bfqd)
 	bfqd->max_rq_in_driver = max(bfqd->max_rq_in_driver,
 				     bfqd->rq_in_driver);
 
+	if (bfqd->hw_tag == 1)
+		return;
+
 	/*
 	 * This sample is valid if the number of outstanding requests
 	 * is large enough to allow a queueing behavior.  Note that the
@@ -2635,7 +2662,7 @@ static void *bfq_init_queue(struct request_queue *q)
 	INIT_LIST_HEAD(&bfqd->active_list);
 	INIT_LIST_HEAD(&bfqd->idle_list);
 
-	bfqd->hw_tag = 1;
+	bfqd->hw_tag = -1;
 
 	bfqd->bfq_max_budget = bfq_default_max_budget;
 
