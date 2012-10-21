@@ -208,8 +208,11 @@ static int smd_tty_write(struct tty_struct *tty,
 	int avail, ret, runfix=0;
 #ifdef CONFIG_MACH_HTCLEO
 	static int init=0;
+	// seems to start the modem
 	const unsigned char* firstcall ="AT@BRIC=0\r";
+	// set functionality to low power mode
 	const unsigned char* secondcall="AT+CFUN=0\r";
+	// deregister from the network
 	const unsigned char* thirdcall ="AT+COPS=2\r";
 	unsigned int call_len;
 #endif
