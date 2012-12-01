@@ -992,6 +992,13 @@ static int msm_reboot_call(struct notifier_block *this, unsigned long code, void
 		} else if (!strncmp(cmd, "oem-", 4)) {
 			unsigned code = simple_strtoul(cmd + 4, 0, 16) & 0xff;
 			restart_reason = RESTART_REASON_OEM_BASE | code;
+		} else if (!strncmp(cmd, "S", 1)) {
+			/*
+			 * Handle HD2 off-mode alarm
+			 * credits to Rick_1995(zeusk) & kokotas
+			 */
+			unsigned code = simple_strtoul(cmd + 1, 0, 16) & 0x00ffffff;
+			restart_reason = RESTART_REASON_HD2_OFFMODE_ALARM | code;
 		} else if (!strcmp(cmd, "force-hard")) {
 			restart_reason = RESTART_REASON_RAMDUMP;
 		} else {

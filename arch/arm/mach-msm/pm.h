@@ -48,6 +48,9 @@
 #define RESTART_REASON_OEM_BASE		0x6f656d00
 #define RESTART_REASON_RIL_FATAL	(RESTART_REASON_OEM_BASE | 0x99)
 
+/* This restart constant is used for the HTC HD2 off-mode alarm */
+#define RESTART_REASON_HD2_OFFMODE_ALARM	0x53000000
+
 #ifdef CONFIG_HOTPLUG_CPU
 extern int pen_release;
 extern void msm_secondary_startup(void);
