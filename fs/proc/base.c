@@ -61,6 +61,7 @@
 #include <linux/string.h>
 #include <linux/seq_file.h>
 #include <linux/namei.h>
+#include <linux/memcontrol.h>
 #include <linux/mnt_namespace.h>
 #include <linux/mm.h>
 #include <linux/rcupdate.h>
