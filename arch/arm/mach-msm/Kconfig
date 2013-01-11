@@ -1630,6 +1630,13 @@ config HTCLEO_ENABLE_MULTI_TOUCH
 	help
 		Add multitouch support for touchscreen
 
+config HTCLEO_TOUCHSCREEN_FILTER
+	bool "Enable touchscreen filter"
+	default y
+	depends on MACH_HTCLEO
+	help
+		Enable input filtering for touchscreen
+
 choice
 	prompt "HTCLEO Keymapping"
 	default HTCLEO_KEYMAP_ANDROID

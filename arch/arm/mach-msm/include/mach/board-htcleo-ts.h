@@ -20,6 +20,9 @@
 
 #define LEO_TOUCH_DRV_NAME  "leo_touch_name"
 
+#define LEO_TS_FINGER_NOT_PRESSED	0
+#define LEO_TS_FINGER_PRESSED		100
+
 struct htcleo_ts_i2c_platform_data
 {
     uint16_t version;

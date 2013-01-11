@@ -26,7 +26,9 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/platform_device.h>
+#include <linux/proc_fs.h>
 #include <asm/gpio.h>
+#include <asm/uaccess.h>
 #include <mach/board-htcleo-ts.h>
 #include "board-htcleo.h"
 #include "gpio_chip.h"
@@ -52,7 +54,6 @@
 
 #define MAKEWORD(a, b)      ((uint16_t)(((uint8_t)(a)) | ((uint16_t)((uint8_t)(b))) << 8))
 
-
 struct htcleo_ts_data
 {
 	struct i2c_client *client;
@@ -68,6 +69,7 @@ struct htcleo_ts_data
 #endif
 	uint16_t version;
 	struct early_suspend early_suspend;
+	uint8_t discard_threshold;
 };
 
 struct workqueue_struct *htcleo_touch_wq;
@@ -77,7 +79,50 @@ static void htcleo_ts_early_suspend(struct early_suspend *h);
 static void htcleo_ts_late_resume(struct early_suspend *h);
 #endif
 
+#ifdef CONFIG_HTCLEO_TOUCHSCREEN_FILTER
+/**
+ * proc_fs interface for adjusting the discard_threshold of the filter
+ * 
+ * Interface can be accessed via /proc/ts_discard_threshold. A maximum value
+ * of 25 has been hard-coded into the interface.
+ * 
+ * Copyright (C) 2013 Marc Alexander
+ */
+#define PROC_DISCARD_THRESHOLD_NAME "ts_discard_threshold"
 
+static int discard_threshold = 10;
+static struct proc_dir_entry *ts_discard_threshold;
+
+static int proc_read_discard_threshold(char *page, char **start, off_t off, int count,
+	int *eof, void *data)
+{
+	int ret;
+
+	ret = sprintf(page, "%i\n", discard_threshold);
+
+	return ret;
+}
+
+static int proc_write_discard_threshold(struct file *file, const char *buffer,
+	unsigned long count, void *data)
+{
+	char temp_buff[count + 1];
+	int ret;
+	int len = count;
+
+	if (copy_from_user(temp_buff, buffer, len))
+		return -EFAULT;
+
+	sscanf(temp_buff, "%i", &ret);
+
+	if (ret >= 0 && ret <= 25)
+		discard_threshold = ret;
+	else
+		printk(KERN_ALERT "%s: Incorrect value:%i\n", __func__, ret);
+
+	return ret;
+}
+#endif /* CONFIG_HTCLEO_TOUCHSCREEN_FILTER */
 
 static int I2C_Read(struct htcleo_ts_data *ts, uint8_t dev, uint8_t addr, uint32_t sz, uint8_t* bf)
 {
@@ -245,51 +290,125 @@ static int htcleo_init_intr(struct htcleo_ts_data *ts)
 	return -1;
 }
 
+#ifdef CONFIG_HTCLEO_TOUCHSCREEN_FILTER
+/**
+ * Filter touchscreen input
+ * 
+ * This function prevents the function htcleo_ts_work_func() from updating the
+ * cursor pointer if the movement is lower than the discard_threshold.
+ * 
+ * Copyright (C) 2013 Marc Alexander, Copyright (C) 2007 Google, Inc.
+ */
+static int filter_input(struct htcleo_ts_data *ts, int pos_x[2], int pos_y[2],
+			int finger2_pressed, const int z)
+{
+	int drift_x[2], drift_y[2];
+	static int last_x[2], last_y[2];
+	uint8_t discard[2] = {0, 0};
+
+	/*
+	 * Update device's discard_threshold if the setting has been changed
+	 * via the proc_fs interface
+	 */
+	if (ts->discard_threshold != discard_threshold)
+		ts->discard_threshold = discard_threshold;
+
+	drift_x[0] = abs(last_x[0] - pos_x[0]);
+	drift_y[0] = abs(last_y[0] - pos_y[0]);
+
+	if (finger2_pressed)
+	{
+		drift_x[1] = abs(last_x[1] - pos_x[1]);
+		drift_y[1] = abs(last_y[1] - pos_y[1]);
+	}
+
+	if (drift_x[0] < ts->discard_threshold &&
+	    drift_y[0] < ts->discard_threshold && z != 0)
+	{
+		discard[0] = 1;
+	}
+
+	if (!finger2_pressed || (drift_x[1] < ts->discard_threshold &&
+	    drift_y[1] > ts->discard_threshold))
+	{
+		discard[1] = 1;
+	}
+
+	if (discard[0] && discard[1])
+	{
+		return 1;
+	}
+
+	last_x[0] = pos_x[0];
+	last_y[0] = pos_y[0];
+
+	if (finger2_pressed)
+	{
+		last_x[1] = pos_x[1];
+		last_y[1] = pos_y[1];
+	}
+
+	if (z == 0)
+	{
+	      last_x[0] = last_x[1] = 0;
+	      last_y[0] = last_y[1] = 0;
+	}
+
+	return 0;
+}
+
+#endif /* CONFIG_HTCLEO_TOUCHSCREEN_FILTER */
+
 
 static void htcleo_ts_work_func(struct work_struct *work)
 {
 	uint8_t buf[9];
 	uint32_t ptcount;
-	uint32_t ptx[2];
-	uint32_t pty[2];
+	uint32_t ptx[2] = {0, 0};
+	uint32_t pty[2] = {0, 0};
 	struct htcleo_ts_data *ts = container_of(work, struct htcleo_ts_data, work);    
 	int pressed1, pressed2;
+	uint8_t width = -1;
+	uint8_t z = 0;
+#ifdef CONFIG_HTCLEO_TOUCHSCREEN_FILTER
+	int ret;
+#endif
 
 	ptcount = 0;
 	switch (ts->ts_type)
 	{
-	case TOUCH_TYPE_2A:
-		if (!I2C_ReadNo(ts, TYPE_2A_DEVID, 9, buf))
-		{
-			dev_dbg(&ts->client->dev, "TS: ReadPos failed\n");
-			goto error;
-		}
-		if (buf[0] != 0x5A)
-		{
-			dev_dbg(&ts->client->dev, "TS: ReadPos wrmark\n");
-			goto error;
-		}
+		case TOUCH_TYPE_2A:
+			if (!I2C_ReadNo(ts, TYPE_2A_DEVID, 9, buf))
+			{
+				dev_dbg(&ts->client->dev, "TS: ReadPos failed\n");
+				goto error;
+			}
+			if (buf[0] != 0x5A)
+			{
+				dev_dbg(&ts->client->dev, "TS: ReadPos wrmark\n");
+				goto error;
+			}
 
-		ptcount = (buf[8] >> 1) & 3;
-		if (ptcount > 2)
-		{
-			ptcount = 2;
-		}
+			ptcount = (buf[8] >> 1) & 3;
+			if (ptcount > 2)
+			{
+				ptcount = 2;
+			}
 
-		if (ptcount >= 1)
-		{
-			ptx[0] = MAKEWORD(buf[2], (buf[1] & 0xF0) >> 4);
-			pty[0] = MAKEWORD(buf[3], (buf[1] & 0x0F) >> 0);
-		}
-		if (ptcount == 2)
-		{
-			ptx[1] = MAKEWORD(buf[5], (buf[4] & 0xF0) >> 4);
-			pty[1] = MAKEWORD(buf[6], (buf[4] & 0x0F) >> 0);
-		}
-		break;
-	default:
-		dev_dbg(&ts->client->dev, "TS: wrong type %x\n", ts->ts_type);
-		goto error;
+			if (ptcount >= 1)
+			{
+				ptx[0] = MAKEWORD(buf[2], (buf[1] & 0xF0) >> 4);
+				pty[0] = MAKEWORD(buf[3], (buf[1] & 0x0F) >> 0);
+			}
+			if (ptcount == 2)
+			{
+				ptx[1] = MAKEWORD(buf[5], (buf[4] & 0xF0) >> 4);
+				pty[1] = MAKEWORD(buf[6], (buf[4] & 0x0F) >> 0);
+			}
+			break;
+		default:
+			dev_dbg(&ts->client->dev, "TS: wrong type %x\n", ts->ts_type);
+			goto error;
 	}
 
 
@@ -327,60 +446,80 @@ static void htcleo_ts_work_func(struct work_struct *work)
 	if (pressed1)
 	{
 		dev_dbg(&ts->client->dev, "pressed1\n");
-		input_report_abs(ts->input_dev, ABS_X, ptx[0]);
-		input_report_abs(ts->input_dev, ABS_Y, pty[0]);
-		input_report_abs(ts->input_dev, ABS_PRESSURE, 100);
-		input_report_abs(ts->input_dev, ABS_TOOL_WIDTH, 1);
-		input_report_key(ts->input_dev, BTN_TOUCH, 1);
-#ifdef CONFIG_HTCLEO_ENABLE_MULTI_TOUCH
-		input_report_abs(ts->input_dev, ABS_MT_POSITION_X, ptx[0]);
-		input_report_abs(ts->input_dev, ABS_MT_POSITION_Y, pty[0]);
-		input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR, 100);
-		input_report_abs(ts->input_dev, ABS_MT_WIDTH_MAJOR, 0);
-#endif
+		z = LEO_TS_FINGER_PRESSED;
+		width = 1;
 	}
 	else if (ts->pressed1)
 	{
 		dev_dbg(&ts->client->dev, "unpressed1\n");
-		input_report_abs(ts->input_dev, ABS_X, ptx[0]);
-		input_report_abs(ts->input_dev, ABS_Y, pty[0]);
-		input_report_abs(ts->input_dev, ABS_PRESSURE, 0);
-		input_report_abs(ts->input_dev, ABS_TOOL_WIDTH, 0);
-		input_report_key(ts->input_dev, BTN_TOUCH, 0);
+		z = LEO_TS_FINGER_NOT_PRESSED;
+		width = 0;
+	}
+
+	if (width >= 0)
+	{
+		if (z)
+		{
+			input_report_abs(ts->input_dev, ABS_X, ptx[0]);
+			input_report_abs(ts->input_dev, ABS_Y, pty[0]);
+		}
+		input_report_abs(ts->input_dev, ABS_PRESSURE, z);
+		input_report_abs(ts->input_dev, ABS_TOOL_WIDTH, width);
+		input_report_key(ts->input_dev, BTN_TOUCH, pressed1);
+		input_report_key(ts->input_dev, BTN_2, pressed2);
+
+		if (pressed2)
+		{
+			input_report_abs(ts->input_dev, ABS_HAT0X, ptx[1]);
+			input_report_abs(ts->input_dev, ABS_HAT0Y, pty[1]);
+		}
+#ifdef CONFIG_HTCLEO_TOUCHSCREEN_FILTER
+		ret = filter_input(ts, ptx, pty, pressed2, z);
+		if (ret == 1)
+		{
+			// Exit current work function run
+			goto exit;
+		}
+#endif
 #ifdef CONFIG_HTCLEO_ENABLE_MULTI_TOUCH
 		input_report_abs(ts->input_dev, ABS_MT_POSITION_X, ptx[0]);
 		input_report_abs(ts->input_dev, ABS_MT_POSITION_Y, pty[0]);
-		input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR, 0);
+		input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR, z);
 		input_report_abs(ts->input_dev, ABS_MT_WIDTH_MAJOR, 0);
 #endif
 	}
-    #ifdef CONFIG_HTCLEO_ENABLE_MULTI_TOUCH
-	input_mt_sync(ts->input_dev);
 
+#ifdef CONFIG_HTCLEO_ENABLE_MULTI_TOUCH
+	input_mt_sync(ts->input_dev);
 
 	if (pressed2)
 	{
 		dev_dbg(&ts->client->dev, "pressed2\n");
 		input_report_abs(ts->input_dev, ABS_MT_POSITION_X, ptx[1]);
 		input_report_abs(ts->input_dev, ABS_MT_POSITION_Y, pty[1]);
-		input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR, 100);
-		input_report_abs(ts->input_dev, ABS_MT_WIDTH_MAJOR, 0);
+		input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR,
+				 LEO_TS_FINGER_PRESSED);
+		input_report_abs(ts->input_dev, ABS_MT_WIDTH_MAJOR, 1);
+		input_mt_sync(ts->input_dev);
 	}
 	else if (ts->pressed2)
 	{
 		dev_dbg(&ts->client->dev, "unpressed2\n");
 		input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR, 0);
+		input_report_abs(ts->input_dev, ABS_MT_WIDTH_MAJOR, 0);
+		input_mt_sync(ts->input_dev);
 	}
-	input_mt_sync(ts->input_dev);
-    #endif
+#endif
 	input_sync(ts->input_dev);
 
 	ts->pressed1 = pressed1;
 	ts->pressed2 = pressed2;
 
-    error:
+error:
 	ts->prev_ptcount = ptcount;
-
+#ifdef CONFIG_HTCLEO_TOUCHSCREEN_FILTER
+exit:
+#endif
 	/* prepare for next intr */
 	enable_irq(ts->client->irq);
 }
@@ -497,7 +636,7 @@ static int htcleo_ts_probe(struct i2c_client *client, const struct i2c_device_id
 	}
 
 	ts->input_dev->name = "htcleo-touchscreen";
-
+	ts->discard_threshold = discard_threshold;
 
     // inital touch calibraion
 	switch (ts->ts_type)
@@ -560,6 +699,20 @@ static int htcleo_ts_probe(struct i2c_client *client, const struct i2c_device_id
 	ts->early_suspend.suspend = htcleo_ts_early_suspend;
 	ts->early_suspend.resume = htcleo_ts_late_resume;
 	register_early_suspend(&ts->early_suspend);
+#endif
+#if CONFIG_HTCLEO_TOUCHSCREEN_FILTER
+	ts_discard_threshold = create_proc_entry(PROC_DISCARD_THRESHOLD_NAME, 0644, NULL);
+
+	if (ts_discard_threshold == NULL) {
+		remove_proc_entry(PROC_DISCARD_THRESHOLD_NAME, NULL);
+		printk(KERN_ALERT "%s: Unable to create /proc/%s\n", __func__,
+		       PROC_DISCARD_THRESHOLD_NAME);
+	}
+	ts_discard_threshold->read_proc = proc_read_discard_threshold;
+	ts_discard_threshold->write_proc = proc_write_discard_threshold;
+	ts_discard_threshold->uid = 0;
+	ts_discard_threshold->gid = 0;
+	printk(KERN_INFO "/proc/%s created\n", PROC_DISCARD_THRESHOLD_NAME);
 #endif
 
 	dev_info(&client->dev, "Start touchscreen %s\n", ts->input_dev->name);
