@@ -668,8 +668,8 @@ static int htcleo_ts_probe(struct i2c_client *client, const struct i2c_device_id
 	input_set_abs_params(ts->input_dev, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
 	input_set_abs_params(ts->input_dev, ABS_MT_WIDTH_MAJOR, 0, 1, 0, 0);
 #endif
-    //    input_set_abs_params(ts->input_dev, ABS_HAT0X, x_start, x_end, 0, 0);
-    //    input_set_abs_params(ts->input_dev, ABS_HAT0Y, y_start, y_end, 0, 0);
+	input_set_abs_params(ts->input_dev, ABS_HAT0X, x_start, x_end, 0, 0);
+	input_set_abs_params(ts->input_dev, ABS_HAT0Y, y_start, y_end, 0, 0);
     //    input_set_abs_params(ts->input_dev, ABS_PRESSURE, pdata->abs_pressure_min, pdata->abs_pressure_max, 0, 0);
     //    input_set_abs_params(ts->input_dev, ABS_TOOL_WIDTH, pdata->abs_width_min, pdata->abs_width_max, 0, 0);
 
