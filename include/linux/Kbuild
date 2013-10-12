@@ -398,5 +398,4 @@ header-y += msm_kgsl.h
 header-y += msm_q6vdec.h
 header-y += msm_q6venc.h
 header-y += msm_mdp.h
-header-y += msm_vidc_dec.h
 header-y += msm_rotator.h
