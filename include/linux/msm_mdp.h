@@ -59,9 +59,17 @@
 						struct msmfb_mixer_info_req)
 #define MSMFB_OVERLAY_PLAY_WAIT _IOWR(MSMFB_IOCTL_MAGIC, 149, \
 						struct msmfb_overlay_data)
+
 #define MSMFB_WRITEBACK_INIT _IO(MSMFB_IOCTL_MAGIC, 150)
+
+/* The QCT latest code base is used, adding on 2/9/2012 */
 #define MSMFB_WRITEBACK_START _IO(MSMFB_IOCTL_MAGIC, 151)
 #define MSMFB_WRITEBACK_STOP _IO(MSMFB_IOCTL_MAGIC, 152)
+
+#define MSMFB_WRITEBACK_REGISTER_BUFFER _IOW(MSMFB_IOCTL_MAGIC, 151, \
+						struct msmfb_writeback_data)
+#define MSMFB_WRITEBACK_UNREGISTER_BUFFER _IOW(MSMFB_IOCTL_MAGIC, 152, \
+						struct msmfb_writeback_data)
 #define MSMFB_WRITEBACK_QUEUE_BUFFER _IOW(MSMFB_IOCTL_MAGIC, 153, \
 						struct msmfb_data)
 #define MSMFB_WRITEBACK_DEQUEUE_BUFFER _IOW(MSMFB_IOCTL_MAGIC, 154, \
@@ -73,14 +81,23 @@
 #define MSMFB_BUFFER_SYNC  _IOW(MSMFB_IOCTL_MAGIC, 162, struct mdp_buf_sync)
 #define MSMFB_DISPLAY_COMMIT      _IOW(MSMFB_IOCTL_MAGIC, 164, \
 						struct mdp_display_commit)
+/* HTC: Define custom ioctl started from 200 */
+#define MSMFB_OVERLAY_CHANGE_ZORDER_VG_PIPES    _IOW(MSMFB_IOCTL_MAGIC, 200, unsigned int)
+#define MSMFB_GET_GAMMA_CURVY _IOWR(MSMFB_IOCTL_MAGIC, 201, struct gamma_curvy)
+
 
 #define FB_TYPE_3D_PANEL 0x10101010
 #define MDP_IMGTYPE2_START 0x10000
 #define MSMFB_DRIVER_VERSION	0xF9E8D701
 
+#define MSMFB_GET_USB_PROJECTOR_INFO _IOR(MSMFB_IOCTL_MAGIC, 301, struct msmfb_usb_projector_info)
+#define MSMFB_SET_USB_PROJECTOR_INFO _IOW(MSMFB_IOCTL_MAGIC, 302, struct msmfb_usb_projector_info)
+
 enum {
 	NOTIFY_UPDATE_START,
 	NOTIFY_UPDATE_STOP,
+	NOTIFY_TERMINATE_BLOCKING,
+	NOTIFY_NUM,
 };
 
 enum {
@@ -151,6 +168,7 @@ enum {
 #define MDP_DEINTERLACE_ODD		0x00400000
 #define MDP_OV_PLAY_NOWAIT		0x00200000
 #define MDP_SOURCE_ROTATED_90		0x00100000
+#define MDP_MEMORY_ID_TYPE_FB		0x00001000
 #define MDP_DPP_HSIC			0x00080000
 #define MDP_BACKEND_COMPOSITION		0x00040000
 #define MDP_BORDERFILL_SUPPORTED	0x00010000
@@ -498,6 +516,11 @@ struct msmfb_mixer_info_req {
 	struct mdp_mixer_info info[MAX_PIPE_PER_MIXER];
 };
 
+struct msmfb_usb_projector_info {
+	int usb_offset;
+	int latest_offset;
+};
+
 enum {
 	DISPLAY_SUBSYSTEM_ID,
 	ROTATOR_SUBSYSTEM_ID,
@@ -510,13 +533,21 @@ int get_fb_phys_info(unsigned long *start, unsigned long *len, int fb_num,
 	int subsys_id);
 struct fb_info *msm_fb_get_writeback_fb(void);
 int msm_fb_writeback_init(struct fb_info *info);
+
+/* The QCT latest code base is used, adding on 2/9/2012 */
 int msm_fb_writeback_start(struct fb_info *info);
+int msm_fb_writeback_stop(struct fb_info *info);
+
+int msm_fb_writeback_register_buffer(struct fb_info *info,
+		struct msmfb_writeback_data *data);
 int msm_fb_writeback_queue_buffer(struct fb_info *info,
 		struct msmfb_data *data);
 int msm_fb_writeback_dequeue_buffer(struct fb_info *info,
 		struct msmfb_data *data);
+int msm_fb_writeback_unregister_buffer(struct fb_info *info,
+		struct msmfb_writeback_data *data);
 int msm_fb_writeback_stop(struct fb_info *info);
 int msm_fb_writeback_terminate(struct fb_info *info);
 #endif
 
-#endif /* _MSM_MDP_H_ */
+#endif /*_MSM_MDP_H_*/
