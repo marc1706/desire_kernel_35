@@ -23,6 +23,10 @@ int genlock_lock(struct genlock_handle *handle, int op, int flags,
 #define GENLOCK_WRLOCK 1
 #define GENLOCK_RDLOCK 2
 
+#if !defined(BIT)
+#define BIT(nr)			(1UL << (nr))
+#endif
+
 #define GENLOCK_NOBLOCK       BIT(0)
 #define GENLOCK_WRITE_TO_READ BIT(1)
 
