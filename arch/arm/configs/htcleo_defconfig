@@ -1204,7 +1204,9 @@ CONFIG_BCM4329_NVRAM_PATH="/proc/calibration"
 # CONFIG_BCM4329_248 is not set
 # CONFIG_BCM4329_CES is not set
 # CONFIG_BCM4330 is not set
-# CONFIG_BCMDHD is not set
+CONFIG_BCMDHD=m
+CONFIG_BCMDHD_FW_PATH="/vendor/firmware/fw_bcmdhd.bin"
+CONFIG_BCMDHD_NVRAM_PATH="/proc/calibration"
 
 #
 # Enable WiMAX (Networking options) to see the WiMAX drivers
