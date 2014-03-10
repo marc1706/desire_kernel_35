@@ -5047,7 +5047,9 @@ wl_notify_connect_status_ap(struct wl_priv *wl, struct net_device *ndev,
 		WL_ERR(("No valid band"));
 		return -EINVAL;
 	}
-#if LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 38) && !defined(WL_COMPAT_WIRELESS)
+#if (LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 38) || \
+	LINUX_VERSION_CODE == KERNEL_VERSION(2, 6, 35)) && \
+	!defined(WL_COMPAT_WIRELESS)
 	freq = ieee80211_channel_to_frequency(channel);
 #else
 	freq = ieee80211_channel_to_frequency(channel, band->band);
