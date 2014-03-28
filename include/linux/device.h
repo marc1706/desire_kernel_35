@@ -106,16 +106,18 @@ extern int bus_register_notifier(struct bus_type *bus,
 extern int bus_unregister_notifier(struct bus_type *bus,
 				   struct notifier_block *nb);
 
-/* All 4 notifers below get called with the target struct device *
+/* All 6 notifers below get called with the target struct device *
  * as an argument. Note that those functions are likely to be called
  * with the device lock held in the core, so be careful.
  */
 #define BUS_NOTIFY_ADD_DEVICE		0x00000001 /* device added */
 #define BUS_NOTIFY_DEL_DEVICE		0x00000002 /* device removed */
-#define BUS_NOTIFY_BOUND_DRIVER		0x00000003 /* driver bound to device */
-#define BUS_NOTIFY_UNBIND_DRIVER	0x00000004 /* driver about to be
+#define BUS_NOTIFY_BIND_DRIVER		0x00000003 /* driver about to be
+						      bound */
+#define BUS_NOTIFY_BOUND_DRIVER		0x00000004 /* driver bound to device */
+#define BUS_NOTIFY_UNBIND_DRIVER	0x00000005 /* driver about to be
 						      unbound */
-#define BUS_NOTIFY_UNBOUND_DRIVER	0x00000005 /* driver is unbound
+#define BUS_NOTIFY_UNBOUND_DRIVER	0x00000006 /* driver is unbound
 						      from the device */
 
 extern struct kset *bus_get_kset(struct bus_type *bus);
