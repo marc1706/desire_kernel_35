@@ -117,6 +117,12 @@ obj-$(CONFIG_RAMOOPS)		+= ramoops.o
 obj-$(CONFIG_JS_RTC)		+= js-rtc.o
 js-rtc-y = rtc.o
 
+ifneq ($(CONFIG_MSM_ROTATOR_LEGACY),y)
+obj-$(CONFIG_MSM_ROTATOR)	+= msm_rotator.o
+else
+obj-$(CONFIG_MSM_ROTATOR)	+= msm_rotator-legacy.o
+endif
+
 obj-$(CONFIG_MMC_GENERIC_CSDIO)	+= csdio.o
 
 # Files generated that shall be removed upon make clean

@@ -1,0 +1,10 @@
+git clone https://github.com/walter79/android_kernel_htc_leo_2.6.35-mark1706-based
+
+make clean
+make mrproper
+
+export ARCH=arm
+export CROSS_COMPILE=/path to your toolchain/arm-eabi-4.4.3/bin/arm-eabi-
+
+make htcleo_defconfig
+make -jX (X=numbers of CPU core or possible threads)
